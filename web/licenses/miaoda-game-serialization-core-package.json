@@ -1,0 +1,37 @@
+{
+  "name": "miaoda-game-serialization-core",
+  "version": "0.1.0",
+  "description": "Engine-independent canonical JSON and compatibility checksum primitives for persisted game data.",
+  "type": "module",
+  "private": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.spec.*",
+    "!dist/**/*.test.*",
+    "!dist/**/*.tsbuildinfo"
+  ],
+  "keywords": [
+    "serialization",
+    "canonical-json",
+    "fnv1a",
+    "checksum",
+    "save-game"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.lib.json",
+    "test": "vitest run"
+  }
+}

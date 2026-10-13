@@ -1,0 +1,40 @@
+{
+  "name": "miaoda-game-grid-core",
+  "version": "0.3.2",
+  "description": "Engine-agnostic rectangular and hex grid primitives with topology, pathfinding, ranges, coordinate math and deterministic hex layout/picking.",
+  "type": "module",
+  "private": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.spec.*",
+    "!dist/**/*.test.*",
+    "!dist/**/*.tsbuildinfo"
+  ],
+  "keywords": [
+    "grid",
+    "board",
+    "pathfinding",
+    "astar",
+    "hex-grid",
+    "tactics",
+    "cocos",
+    "phaser"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.lib.json",
+    "test": "vitest run"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "sokoban-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "extract": "node scripts/extract.mjs",
+    "build": "node scripts/build.mjs",
+    "build:single": "node scripts/build.mjs && node scripts/build-single.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "audit": "node scripts/audit.mjs",
+    "test:browser": "node scripts/browser-check.mjs"
+  },
+  "dependencies": {
+    "lucide": "^0.468.0",
+    "miaoda-game-sokoban-core": "0.1.1"
+  },
+  "devDependencies": {
+    "@xmldom/xmldom": "^0.8.11",
+    "esbuild": "^0.25.0",
+    "playwright": "^1.56.0"
+  }
+}

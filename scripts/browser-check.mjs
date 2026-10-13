@@ -1,0 +1,128 @@
+import { chromium } from 'playwright';
+import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import assert from 'node:assert/strict';
+import { parseLevel, solveSokoban } from 'miaoda-game-sokoban-core';
+import { assets } from '../web/assets.js';
+const executablePath='C:/Users/Qiuzizhao/AppData/Local/ms-playwright/chromium-1148/chrome-win/chrome.exe';
+const browser=await chromium.launch({headless:true,executablePath});
+const errors=[];
+fs.mkdirSync('qa',{recursive:true});
+const standalone=Boolean(process.env.SOKOBAN_HTML_FILE);
+const context=await browser.newContext({viewport:{width:1366,height:900},offline:standalone});
+await context.addInitScript(()=>{
+  const NativeAudio=window.Audio;
+  window.__qaAudio=[];
+  window.Audio=function(...args){const audio=new NativeAudio(...args);window.__qaAudio.push(audio);return audio;};
+  window.Audio.prototype=NativeAudio.prototype;
+});
+const page=await context.newPage();
+page.on('pageerror',error=>errors.push(error.message));
+const url=pathToFileURL(path.resolve(process.env.SOKOBAN_HTML_FILE||'web/index.html')).href;
+const externalRequests=[];
+if(standalone)page.on('request',request=>{if(request.url()!==url&&!request.url().startsWith('data:'))externalRequests.push(request.url());});
+try {
+  await page.goto(url);
+  await page.locator('.crate').first().waitFor();
+  await page.screenshot({path:'qa/desktop.png',fullPage:true});
+  const initial=await page.locator('.player').getAttribute('style');
+  await page.keyboard.press('ArrowRight');
+  assert.equal(await page.locator('#moves').textContent(),'1');
+  await page.locator('#undo').click();
+  assert.equal(await page.locator('#moves').textContent(),'0');
+  assert.equal(await page.locator('.player').getAttribute('style'),initial);
+  await page.locator('#redo').click();
+  assert.equal(await page.locator('#moves').textContent(),'1');
+  await page.locator('#pause').click();
+  await page.keyboard.press('ArrowDown');
+  assert.equal(await page.locator('#moves').textContent(),'1');
+  await page.locator('#resume').click();
+  await page.waitForTimeout(250);
+  await page.reload();
+  await page.locator('.crate').first().waitFor();
+  assert.equal(await page.locator('#moves').textContent(),'1');
+  await page.locator('#restart').click();
+  const retainedCrate=await page.locator('.crate').first().elementHandle();
+  await page.keyboard.press('ArrowRight');
+  assert.equal(await retainedCrate.evaluate(e=>e.isConnected),true,'Walking must retain box nodes');
+  await page.locator('#restart').click();
+  await page.locator('#sound').click();
+  await page.waitForFunction(()=>window.__qaAudio.some(a=>a.loop&&!a.paused));
+  await page.locator('#pause').click();
+  assert.equal(await page.evaluate(()=>window.__qaAudio.filter(a=>a.loop).every(a=>a.paused)),true);
+  await page.locator('#resume').click();
+  await page.locator('#sound').click();
+  assert.equal(await page.evaluate(()=>window.__qaAudio.filter(a=>a.loop).every(a=>a.paused)),true);
+  const levels=JSON.parse(fs.readFileSync('extracted/levels.json','utf8'));
+  const solution=solveSokoban(parseLevel(levels[0].xsb).level,{maxNodes:50000});
+  const keys={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'};
+  for(const direction of solution.directions)await page.keyboard.press(keys[direction]);
+  assert.equal(await page.locator('#success').evaluate(d=>d.open),true);
+  assert.equal(await page.locator('#completed-count').textContent(),'1');
+  await page.screenshot({path:'qa/victory.png',fullPage:true});
+  await page.locator('#success-next').click();
+  assert.equal(await page.locator('#level-number').textContent(),'02');
+  for(let id=1;id<=50;id++){
+    await page.locator(`[data-page="${id<=25?0:1}"]`).click();
+    await page.getByRole('button',{name:new RegExp(`^第 ${id} 关(?:，已通关)?$`)}).click();
+    assert.equal(Number(await page.locator('#level-number').textContent()),id);
+    const bounds=await page.locator('#board').boundingBox(),stage=await page.locator('#board-stage').boundingBox();
+    assert.ok(bounds.width<=stage.width&&bounds.height<=stage.height,`level ${id} fits`);
+  }
+  const unloaded=await page.evaluate(()=>Array.from(document.images).filter(img=>!img.complete||!img.naturalWidth).map(img=>img.src));
+  assert.deepEqual(unloaded,[]);
+  await page.screenshot({path:'qa/level50.png',fullPage:true});
+  const solutions=JSON.parse(fs.readFileSync('qa/solutions.json','utf8'));
+  for(const solution of solutions){
+    await page.locator(`[data-page="${solution.id<=25?0:1}"]`).click();
+    await page.getByRole('button',{name:new RegExp(`^第 ${solution.id} 关(?:，已通关)?$`)}).click();
+    await page.evaluate(directions=>{
+      const keys={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'};
+      for(const direction of directions)document.dispatchEvent(new KeyboardEvent('keydown',{key:keys[direction],bubbles:true,cancelable:true}));
+    },solution.directions);
+    assert.equal(await page.locator('#success').evaluate(d=>d.open),true,`browser victory ${solution.id}`);
+    assert.equal(Number(await page.locator('#moves').textContent()),solution.moves);
+    assert.equal(Number(await page.locator('#pushes').textContent()),solution.pushes);
+    await page.locator('#success-close').click();
+  }
+  assert.equal(await page.locator('#completed-count').textContent(),'50');
+  const audioUrls=standalone?[...new Set((await page.content()).match(/data:audio\/[^"\s]+/g))]:Object.values(assets).filter(value=>/\.(mp3|wav|ogg)$/.test(value));
+  const audioResults=await page.evaluate(async urls=>await Promise.all(urls.map(url=>new Promise(resolve=>{
+    const audio=new Audio(url),timer=setTimeout(()=>resolve({url,ok:false,error:'metadata timeout'}),5000);
+    audio.preload='metadata';
+    audio.onloadedmetadata=()=>{clearTimeout(timer);resolve({url,ok:Number.isFinite(audio.duration)&&audio.duration>0});};
+    audio.onerror=()=>{clearTimeout(timer);resolve({url,ok:false,error:audio.error?.message});};
+    audio.load();
+  }))),audioUrls);
+  assert.equal(audioResults.length,8);
+  assert.ok(audioResults.every(result=>result.ok),JSON.stringify(audioResults));
+  for(const viewport of [{width:390,height:844},{width:320,height:640}]){
+    await page.setViewportSize(viewport);
+    await page.locator('#catalog-toggle').click();
+    await page.locator('[data-page="0"]').click();
+    await page.getByRole('button',{name:/^第 1 关/}).click();
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
+    assert.equal(overflow,false);
+    await page.screenshot({path:`qa/mobile-${viewport.width}.png`,fullPage:true});
+    await page.locator('[data-direction="right"]').click();
+    assert.equal(await page.locator('#moves').textContent(),'1');
+    await page.locator('#undo').click();
+    assert.equal(await page.locator('#moves').textContent(),'0');
+    await page.locator('#board-stage').evaluate(stage=>{
+      const bounds=stage.getBoundingClientRect();
+      stage.dispatchEvent(new PointerEvent('pointerdown',{pointerId:1,pointerType:'touch',clientX:bounds.x+80,clientY:bounds.y+80,bubbles:true}));
+      stage.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,pointerType:'touch',clientX:bounds.x+150,clientY:bounds.y+80,bubbles:true}));
+    });
+    assert.equal(await page.locator('#moves').textContent(),'1');
+    await page.locator('#undo').click();
+    await page.locator('#catalog-toggle').click();
+    await page.screenshot({path:`qa/catalog-${viewport.width}.png`,fullPage:true});
+    await page.locator('#catalog-close').click();
+  }
+  assert.deepEqual(errors,[]);
+  if(standalone)assert.deepEqual(externalRequests,[]);
+  const report={status:'passed',standalone,offline:standalone,externalRequests:standalone?externalRequests:undefined,levelsPlayedToVictory:50,audioFilesDecoded:audioResults.length,checks:['keyboard','push/victory','undo/redo','pause','save/reload','retained box nodes','music pause/mute','touch buttons','swipe','images','desktop layout','390px layout','320px layout'],runtimeErrors:errors};
+  fs.writeFileSync(`qa/${standalone?'single-file-report':'browser-report'}.json`,JSON.stringify(report,null,2));
+  console.log(JSON.stringify(report));
+} finally {await browser.close();}

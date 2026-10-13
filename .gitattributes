@@ -1,0 +1,5 @@
+extracted/images/** -text
+extracted/audio/** -text
+extracted/logic/** -text
+extracted/*.bcm -text
+web/assets/** -text
