@@ -104,6 +104,9 @@ try {
     await page.getByRole('button',{name:/^第 1 关/}).click();
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
     assert.equal(overflow,false);
+    const directionBounds=await page.locator('[data-direction="right"]').boundingBox();
+    assert.ok(directionBounds.width>=60&&directionBounds.height>=60,'Mobile direction buttons must be large touch targets');
+    assert.ok(directionBounds.y+directionBounds.height<=viewport.height,'Mobile direction buttons must fit in the viewport');
     await page.screenshot({path:`qa/mobile-${viewport.width}.png`,fullPage:true});
     await page.locator('[data-direction="right"]').click();
     assert.equal(await page.locator('#moves').textContent(),'1');
