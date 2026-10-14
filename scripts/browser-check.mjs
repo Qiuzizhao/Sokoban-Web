@@ -107,6 +107,8 @@ try {
     const directionBounds=await page.locator('[data-direction="right"]').boundingBox();
     assert.ok(directionBounds.width>=60&&directionBounds.height>=60,'Mobile direction buttons must be large touch targets');
     assert.ok(directionBounds.y+directionBounds.height<=viewport.height,'Mobile direction buttons must fit in the viewport');
+    const mapBounds=await page.locator('#board').boundingBox();
+    assert.ok(mapBounds.width>=viewport.width-48,'Mobile map must use most of the screen width');
     await page.screenshot({path:`qa/mobile-${viewport.width}.png`,fullPage:true});
     await page.locator('[data-direction="right"]').click();
     assert.equal(await page.locator('#moves').textContent(),'1');

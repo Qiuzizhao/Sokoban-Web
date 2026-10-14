@@ -9,13 +9,14 @@
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
 @media(max-width:360px){.tools .icon-button{width:34px;height:38px}.tools{gap:4px}.dpad{grid-template-columns:repeat(3,34px)}.dpad button{width:34px}.bottom-controls{gap:8px}.stats{gap:10px}.stats>div{gap:4px}}
 @media(max-width:680px){
-  .board-stage{height:34vh;min-height:180px;max-height:360px}
-  .bottom-controls{flex-direction:column;justify-content:center;gap:16px;padding-top:18px;padding-bottom:env(safe-area-inset-bottom,0px)}
-  .dpad{order:1;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,64px);gap:10px}
+  .board-stage{height:48vh;min-height:160px;max-height:none}
+  .bottom-controls{flex-direction:row;justify-content:space-between;gap:12px;padding-top:16px;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .dpad{order:2;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,64px);gap:8px}
   .dpad button{width:64px;height:64px;background:#e2ece0;border-color:#bccfbb;color:#215c43}
   .dpad button:active:not(:disabled){background:#c6ddc2}
   .dpad svg{width:28px;height:28px;stroke-width:2.2}
-  .tools{order:2;gap:8px}
+  .tools{order:1;display:grid;grid-template-columns:repeat(2,44px);gap:8px}
+  .tools .tool-divider{display:none}
   .tools .icon-button{width:44px;height:44px}
   .status:empty{display:none}
 }
@@ -25,7 +26,14 @@
   .game-heading{margin-bottom:12px}
   .level-title h1{font-size:24px;margin-top:4px}
   .stats{padding-bottom:12px}
-  .board-stage{height:30vh}
   .bottom-controls{padding-top:14px;gap:12px}
   .catalog{top:60px}
+}
+@media(max-width:360px){
+  .layout{padding-left:12px;padding-right:12px}
+  .board-stage{margin-left:-12px;margin-right:-12px}
+  .bottom-controls{gap:8px}
+  .tools{gap:4px}
+  .dpad{grid-template-columns:repeat(3,60px);grid-template-rows:repeat(2,60px);gap:6px}
+  .dpad button{width:60px;height:60px}
 }

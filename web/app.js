@@ -106,7 +106,16 @@ function renderBoard() {
 function fitBoard() {
   if (!currentSource) return;
   const stage=$('board-stage');
-  const cell=Math.floor(Math.min((stage.clientWidth-40)/currentSource.width,(stage.clientHeight-44)/currentSource.height,66));
+  const mobile=window.matchMedia('(max-width:680px)').matches;
+  if(mobile){
+    const stageTop=stage.getBoundingClientRect().top+window.scrollY;
+    const controlsHeight=document.querySelector('.bottom-controls').offsetHeight;
+    const desiredHeight=(stage.clientWidth-24)*currentSource.height/currentSource.width+24;
+    const availableHeight=window.innerHeight-stageTop-controlsHeight-24;
+    const height=Math.ceil(Math.max(160,Math.min(desiredHeight,availableHeight)));
+    if(stage.style.height!==`${height}px`)stage.style.height=`${height}px`;
+  }else stage.style.height='';
+  const cell=Math.floor(Math.min((stage.clientWidth-(mobile?24:40))/currentSource.width,(stage.clientHeight-(mobile?24:44))/currentSource.height,66));
   const board=$('board');
   board.style.setProperty('--cell',`${Math.max(12,cell)}px`);
   board.style.width=`${Math.max(12,cell)*currentSource.width}px`;
@@ -238,6 +247,7 @@ $('board-stage').addEventListener('pointercancel',()=>touchStart=null);
 window.addEventListener('pagehide',persist);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)persist();updateMusic();});
 new ResizeObserver(fitBoard).observe($('board-stage'));
+window.addEventListener('resize',fitBoard);
 replaceIcon($('sound'),muted?'volume-x':'volume-2',muted?'开启音效':'关闭音效');
 $('sound').setAttribute('aria-pressed',String(!muted));
 load(Number.isInteger(savedGame?.id)?savedGame.id:1,savedGame);
