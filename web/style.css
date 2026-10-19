@@ -37,3 +37,5 @@
   .dpad{grid-template-columns:repeat(3,60px);grid-template-rows:repeat(2,60px);gap:6px}
   .dpad button{width:60px;height:60px}
 }
+.level-cell:disabled{opacity:1;background:#edf0ec;color:#98a39c;border-color:#e0e5df;cursor:not-allowed}
+.level-cell .lock-icon{position:absolute;right:3px;bottom:3px;width:10px;height:10px;stroke-width:1.8}

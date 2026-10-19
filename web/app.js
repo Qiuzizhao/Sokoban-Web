@@ -1,9 +1,10 @@
-import { createIcons, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Undo2, Redo2, RotateCcw, Pause, Play, Grid2x2, VolumeX, Volume2, Maximize, Minimize, Footprints, Box, CircleCheck, Check, X } from 'lucide';
+import { createIcons, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Undo2, Redo2, RotateCcw, Pause, Play, Grid2x2, VolumeX, Volume2, Maximize, Minimize, Footprints, Box, CircleCheck, Check, LockKeyhole, X } from 'lucide';
 import { levels } from './levels.js';
 import { assets } from './assets.js';
 import { GameSession } from './session.js';
+import { isCompleted, latestLevel, canEnterLevel, adjacentLevel } from './progression.js';
 
-const icons = {ArrowUp,ArrowDown,ArrowLeft,ArrowRight,ChevronLeft,ChevronRight,Undo2,Redo2,RotateCcw,Pause,Play,Grid2x2,VolumeX,Volume2,Maximize,Minimize,Footprints,Box,CircleCheck,Check,X};
+const icons = {ArrowUp,ArrowDown,ArrowLeft,ArrowRight,ChevronLeft,ChevronRight,Undo2,Redo2,RotateCcw,Pause,Play,Grid2x2,VolumeX,Volume2,Maximize,Minimize,Footprints,Box,CircleCheck,Check,LockKeyhole,X};
 const $ = id => document.getElementById(id);
 const storageKey = 'sokoban-web-v1';
 let records = {}, muted = true, savedGame, storageAvailable = true;
@@ -56,7 +57,7 @@ function replaceIcon(button, name, label) {
   button.setAttribute('aria-label',label);
   refreshIcons();
 }
-function completed(id) { return Number.isFinite(records[id]?.moves); }
+function completed(id) { return isCompleted(records,id); }
 function renderCatalog() {
   const count = levels.filter(l=>completed(l.id)).length;
   $('completed-count').textContent=count;
@@ -66,15 +67,24 @@ function renderCatalog() {
   const fragment = document.createDocumentFragment();
   for (const level of levels.slice(page*25,page*25+25)) {
     const button = document.createElement('button');
+    const locked=!canEnterLevel(records,levels,level.id);
     button.className = `level-cell${completed(level.id)?' completed':''}${session.id===level.id?' active':''}`;
     button.textContent=String(level.id).padStart(2,'0');
-    button.setAttribute('aria-label',`第 ${level.id} 关${completed(level.id)?'，已通关':''}`);
+    button.disabled=locked;
+    if(locked){
+      const lock=document.createElement('i');lock.dataset.lucide='lock-keyhole';lock.className='lock-icon';button.append(lock);
+      button.title=`先完成第 ${latestLevel(records,levels)} 关`;
+    }
+    button.setAttribute('aria-label',`第 ${level.id} 关${locked?'，未解锁':completed(level.id)?'，已通关':''}`);
     button.setAttribute('aria-current',session.id===level.id?'true':'false');
     button.addEventListener('click',()=>load(level.id));
     fragment.append(button);
   }
   $('level-grid').replaceChildren(fragment);
   $('personal-best').textContent=completed(session.id)?`本关最佳 ${records[session.id].moves} 步`:'还未通关';
+  $('previous').disabled=adjacentLevel(records,levels,session.id,-1)===undefined;
+  $('next').disabled=adjacentLevel(records,levels,session.id,1)===undefined;
+  refreshIcons();
 }
 function image(key) {
   const img = document.createElement('img');
@@ -152,7 +162,12 @@ function renderState(moveResult) {
   updateMusic();
 }
 function load(id,restore) {
-  const source=levels.find(l=>l.id===id)||levels[0];
+  if(!canEnterLevel(records,levels,id)){
+    if(session){notify('该关卡尚未解锁');return;}
+    id=latestLevel(records,levels)||levels[0].id;
+    restore=undefined;
+  }
+  const source=levels.find(l=>l.id===id);
   currentSource=source;
   session=new GameSession(source);
   if(restore) {try {session.resume(restore);} catch {notify('存档已重置');}}
@@ -160,8 +175,6 @@ function load(id,restore) {
   setCatalog(false);
   if($('success').open) $('success').close();
   $('level-number').textContent=String(source.id).padStart(2,'0');
-  $('previous').disabled=source.id===1;
-  $('next').disabled=source.id===50;
   replaceIcon($('pause'),'pause','暂停');
   renderBoard();renderState();renderCatalog();scheduleSave();
 }
@@ -197,8 +210,8 @@ function togglePause() {
 $('undo').addEventListener('click',undo);
 $('redo').addEventListener('click',redo);
 $('restart').addEventListener('click',()=>{session.restart();notify('');replaceIcon($('pause'),'pause','暂停');renderState();scheduleSave();});
-$('previous').addEventListener('click',()=>load(session.id-1));
-$('next').addEventListener('click',()=>load(session.id+1));
+$('previous').addEventListener('click',()=>load(adjacentLevel(records,levels,session.id,-1)));
+$('next').addEventListener('click',()=>load(adjacentLevel(records,levels,session.id,1)));
 $('pause').addEventListener('click',togglePause);
 $('resume').addEventListener('click',togglePause);
 $('success-close').addEventListener('click',()=>$('success').close());

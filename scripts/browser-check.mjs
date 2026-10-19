@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import assert from 'node:assert/strict';
 import { parseLevel, solveSokoban } from 'miaoda-game-sokoban-core';
 import { assets } from '../web/assets.js';
+import { GameSession } from '../web/session.js';
 const executablePath='C:/Users/Qiuzizhao/AppData/Local/ms-playwright/chromium-1148/chrome-win/chrome.exe';
 const browser=await chromium.launch({headless:true,executablePath});
 const errors=[];
@@ -25,6 +26,14 @@ if(standalone)page.on('request',request=>{if(request.url()!==url&&!request.url()
 try {
   await page.goto(url);
   await page.locator('.crate').first().waitFor();
+  assert.equal(await page.locator('#next').isDisabled(),true);
+  assert.equal(await page.getByRole('button',{name:'第 2 关，未解锁',exact:true}).isDisabled(),true);
+  await page.getByRole('button',{name:'第 3 关，未解锁',exact:true}).evaluate(button=>button.dispatchEvent(new MouseEvent('click',{bubbles:true})));
+  await page.locator('#next').evaluate(button=>button.dispatchEvent(new MouseEvent('click',{bubbles:true})));
+  assert.equal(await page.locator('#level-number').textContent(),'01','Locked levels cannot be entered through either control');
+  await page.locator('[data-page="1"]').click();
+  assert.equal(await page.getByRole('button',{name:'第 26 关，未解锁',exact:true}).isDisabled(),true);
+  await page.locator('[data-page="0"]').click();
   await page.screenshot({path:'qa/desktop.png',fullPage:true});
   const initial=await page.locator('.player').getAttribute('style');
   await page.keyboard.press('ArrowRight');
@@ -63,20 +72,16 @@ try {
   await page.screenshot({path:'qa/victory.png',fullPage:true});
   await page.locator('#success-next').click();
   assert.equal(await page.locator('#level-number').textContent(),'02');
-  for(let id=1;id<=50;id++){
-    await page.locator(`[data-page="${id<=25?0:1}"]`).click();
-    await page.getByRole('button',{name:new RegExp(`^第 ${id} 关(?:，已通关)?$`)}).click();
-    assert.equal(Number(await page.locator('#level-number').textContent()),id);
-    const bounds=await page.locator('#board').boundingBox(),stage=await page.locator('#board-stage').boundingBox();
-    assert.ok(bounds.width<=stage.width&&bounds.height<=stage.height,`level ${id} fits`);
-  }
+  assert.equal(await page.locator('#next').isDisabled(),true,'Unfinished level 2 cannot skip to level 3');
   const unloaded=await page.evaluate(()=>Array.from(document.images).filter(img=>!img.complete||!img.naturalWidth).map(img=>img.src));
   assert.deepEqual(unloaded,[]);
-  await page.screenshot({path:'qa/level50.png',fullPage:true});
   const solutions=JSON.parse(fs.readFileSync('qa/solutions.json','utf8'));
   for(const solution of solutions){
     await page.locator(`[data-page="${solution.id<=25?0:1}"]`).click();
     await page.getByRole('button',{name:new RegExp(`^第 ${solution.id} 关(?:，已通关)?$`)}).click();
+    const bounds=await page.locator('#board').boundingBox(),stage=await page.locator('#board-stage').boundingBox();
+    assert.ok(bounds.width<=stage.width&&bounds.height<=stage.height,`level ${solution.id} fits`);
+    if(solution.id>1)assert.equal(await page.locator('#next').isDisabled(),true,`level ${solution.id} must be cleared first`);
     await page.evaluate(directions=>{
       const keys={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'};
       for(const direction of directions)document.dispatchEvent(new KeyboardEvent('keydown',{key:keys[direction],bubbles:true,cancelable:true}));
@@ -85,8 +90,14 @@ try {
     assert.equal(Number(await page.locator('#moves').textContent()),solution.moves);
     assert.equal(Number(await page.locator('#pushes').textContent()),solution.pushes);
     await page.locator('#success-close').click();
+    if(solution.id<50)assert.equal(await page.locator('#next').isDisabled(),false,`victory ${solution.id} unlocks the next level`);
   }
   assert.equal(await page.locator('#completed-count').textContent(),'50');
+  await page.screenshot({path:'qa/level50.png',fullPage:true});
+  await page.reload();
+  await page.locator('.crate').first().waitFor();
+  assert.equal(await page.locator('#completed-count').textContent(),'50');
+  assert.equal(await page.locator('.level-cell:disabled').count(),0,'Completed levels stay available after reload');
   const audioUrls=standalone?[...new Set((await page.content()).match(/data:audio\/[^"\s]+/g))]:Object.values(assets).filter(value=>/\.(mp3|wav|ogg)$/.test(value));
   const audioResults=await page.evaluate(async urls=>await Promise.all(urls.map(url=>new Promise(resolve=>{
     const audio=new Audio(url),timer=setTimeout(()=>resolve({url,ok:false,error:'metadata timeout'}),5000);
@@ -125,9 +136,29 @@ try {
     await page.screenshot({path:`qa/catalog-${viewport.width}.png`,fullPage:true});
     await page.locator('#catalog-close').click();
   }
+  const legacyContext=await browser.newContext({offline:standalone});
+  const legacyPage=await legacyContext.newPage();
+  legacyPage.on('pageerror',error=>errors.push(error.message));
+  try{
+    await legacyPage.addInitScript(current=>{
+      if(!localStorage.getItem('sokoban-web-v1'))localStorage.setItem('sokoban-web-v1',JSON.stringify({records:{1:{moves:12,pushes:2},5:{moves:30,pushes:8}},muted:true,current}));
+    },new GameSession(levels[8]).serialize());
+    await legacyPage.goto(url);
+    await legacyPage.locator('.crate').first().waitFor();
+    assert.equal(await legacyPage.locator('#level-number').textContent(),'02','Old unfinished locked saves return to the first unfinished level');
+    assert.equal(await legacyPage.locator('#completed-count').textContent(),'2','Old completion records survive');
+    assert.equal(await legacyPage.getByRole('button',{name:'第 3 关，未解锁',exact:true}).isDisabled(),true);
+    await legacyPage.getByRole('button',{name:'第 5 关，已通关',exact:true}).click();
+    assert.equal(await legacyPage.locator('#level-number').textContent(),'05');
+    await legacyPage.reload();
+    await legacyPage.locator('.crate').first().waitFor();
+    assert.equal(await legacyPage.locator('#level-number').textContent(),'05','Cleared levels remain playable after reload');
+    await legacyPage.locator('#previous').click();
+    assert.equal(await legacyPage.locator('#level-number').textContent(),'02','Navigation skips locked gaps in legacy progress');
+  }finally{await legacyContext.close();}
   assert.deepEqual(errors,[]);
   if(standalone)assert.deepEqual(externalRequests,[]);
-  const report={status:'passed',standalone,offline:standalone,externalRequests:standalone?externalRequests:undefined,levelsPlayedToVictory:50,audioFilesDecoded:audioResults.length,checks:['keyboard','push/victory','undo/redo','pause','save/reload','retained box nodes','music pause/mute','touch buttons','swipe','images','desktop layout','390px layout','320px layout'],runtimeErrors:errors};
+  const report={status:'passed',standalone,offline:standalone,externalRequests:standalone?externalRequests:undefined,levelsPlayedToVictory:50,audioFilesDecoded:audioResults.length,checks:['sequential unlocking','locked navigation','legacy progress migration','completed level replay','keyboard','push/victory','undo/redo','pause','save/reload','retained box nodes','music pause/mute','touch buttons','swipe','images','desktop layout','390px layout','320px layout'],runtimeErrors:errors};
   fs.writeFileSync(`qa/${standalone?'single-file-report':'browser-report'}.json`,JSON.stringify(report,null,2));
   console.log(JSON.stringify(report));
 } finally {await browser.close();}
