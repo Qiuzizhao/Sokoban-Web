@@ -2,14 +2,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { build } from 'esbuild';
 import { assets } from '../web/assets.js';
+import { levels } from '../web/levels.js';
 
 const classroom=process.argv.includes('--classroom');
+const firstLevel=process.argv.includes('--first-level');
 const outputIndex=process.argv.indexOf('--output');
-const output=outputIndex>=0?process.argv[outputIndex+1]:'推箱子单文件版.html';
+const output=outputIndex>=0?process.argv[outputIndex+1]:firstLevel?'推箱子第一关.html':'推箱子单文件版.html';
 if(!output)throw Error('Missing --output path');
 
 const mime={'.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.mp3':'audio/mpeg','.wav':'audio/wav','.ogg':'audio/ogg'};
-const embedded=Object.fromEntries(Object.entries(assets).map(([name,file])=>{
+const firstLevelAssets=new Set(['playerUp','playerDown','playerLeft','playerRight','floor','wall','box','boxGoal','goal','push','win','gameMusic']);
+const embedded=Object.fromEntries(Object.entries(assets).filter(([name])=>!firstLevel||firstLevelAssets.has(name)).map(([name,file])=>{
   const bytes=fs.readFileSync(path.resolve('web',file));
   const type=mime[path.extname(file)];
   if(!type)throw Error(`Unknown asset type: ${file}`);
@@ -19,6 +22,7 @@ const result=await build({
   entryPoints:['web/app.js'],bundle:true,write:false,format:'iife',minify:true,target:classroom?['chrome79']:['es2020'],legalComments:'eof',
   plugins:[{name:'embedded-assets',setup(builder){
     builder.onLoad({filter:/[\\/]web[\\/]assets\.js$/},()=>({contents:`export const assets = ${JSON.stringify(embedded)};`,loader:'js'}));
+    if(firstLevel)builder.onLoad({filter:/[\\/]web[\\/]levels\.js$/},()=>({contents:`export const levels = ${JSON.stringify(levels.slice(0,1))};`,loader:'js'}));
   }}],
 });
 const script=result.outputFiles[0].text.replace(/<\/script/gi,'<\\/script');
@@ -37,6 +41,11 @@ if(classroom){
   css+='@media(max-width:680px){html.no-flexgap .bottom-controls > *:not(:last-child){margin-right:12px;margin-bottom:0}html.no-flexgap .tools > *:not(:last-child){margin-right:0}}@media(max-width:360px){html.no-flexgap .bottom-controls > *:not(:last-child){margin-right:8px}}';
 }
 let html=fs.readFileSync('web/index.html','utf8');
+if(firstLevel){
+  html=html.replace('<title>推箱子</title>','<title>推箱子 · 第一关</title>');
+  html=html.replace('<body>','<body class="single-level">');
+  css+='\n.single-level .catalog,.single-level .level-navigation,.single-level #catalog-toggle{display:none!important}.single-level .layout{display:block;max-width:830px}.single-level .game{margin:0 auto}\n';
+}
 html=html.replace('<link rel="stylesheet" href="style.css">',`<style>${css}</style>`);
 html=html.replace('<script src="game.js"></script>',()=>`<script>${script}</script>`);
 if(classroom){
@@ -52,7 +61,7 @@ if(classroom){
   html=html.replace('<title>推箱子</title>','<title>我是小小控制员 · 推箱子</title>');
   html=html.replace('href="#" aria-label="推箱子"','aria-label="推箱子"');
 }
-for(const [name,file] of Object.entries(assets)){
+for(const [name,file] of Object.entries(assets).filter(([name])=>name in embedded)){
   html=html.replaceAll(`src="${file.replace(/^\.\//,'')}"`,`src="${embedded[name]}"`);
 }
 const licenses={};

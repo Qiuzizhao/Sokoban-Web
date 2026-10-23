@@ -6,7 +6,8 @@ import { isCompleted, latestLevel, canEnterLevel, adjacentLevel } from './progre
 
 const icons = {ArrowUp,ArrowDown,ArrowLeft,ArrowRight,ChevronLeft,ChevronRight,Undo2,Redo2,RotateCcw,Pause,Play,Grid2x2,VolumeX,Volume2,Maximize,Minimize,Footprints,Box,CircleCheck,Check,LockKeyhole,X};
 const $ = id => document.getElementById(id);
-const storageKey = 'sokoban-web-v1';
+const singleLevel=levels.length===1;
+const storageKey = singleLevel?'sokoban-first-level-v1':'sokoban-web-v1';
 let records = {}, muted = true, savedGame, storageAvailable = true;
 try {
   const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
@@ -17,7 +18,7 @@ try {
 let session, currentSource, playerElement, page = 0, saveTimer, statusTimer;
 const crateElements=new Map();
 const soundEffects = {push:new Audio(assets.push),win:new Audio(assets.win)};
-const music={game:new Audio(assets.gameMusic),catalog:new Audio(assets.catalogMusic)};
+const music=singleLevel?{game:new Audio(assets.gameMusic)}:{game:new Audio(assets.gameMusic),catalog:new Audio(assets.catalogMusic)};
 for(const audio of Object.values(music)){audio.loop=true;audio.volume=.18;audio.preload='none';}
 soundEffects.push.volume = .16;
 soundEffects.win.volume = .32;
@@ -61,8 +62,9 @@ function completed(id) { return isCompleted(records,id); }
 function renderCatalog() {
   const count = levels.filter(l=>completed(l.id)).length;
   $('completed-count').textContent=count;
-  $('completion-percent').textContent=`${count*2}%`;
-  $('completion-bar').style.width=`${count*2}%`;
+  const percent=Math.round(count/levels.length*100);
+  $('completion-percent').textContent=`${percent}%`;
+  $('completion-bar').style.width=`${percent}%`;
   document.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-selected',String(Number(b.dataset.page)===page)));
   const fragment = document.createDocumentFragment();
   for (const level of levels.slice(page*25,page*25+25)) {
@@ -183,7 +185,7 @@ function recordWin() {
   if(!completed(session.id)||session.moves<previous.moves||(session.moves===previous.moves&&session.pushes<previous.pushes)) records[session.id]={moves:session.moves,pushes:session.pushes};
   persist();renderCatalog();sound('win');
   $('success-stats').textContent=`第 ${String(session.id).padStart(2,'0')} 关 · ${session.moves} 步 · ${session.pushes} 次推动`;
-  $('success-next').innerHTML=session.id===50?'返回选关 <i data-lucide="grid-2x2"></i>':'下一关 <i data-lucide="arrow-right"></i>';
+  $('success-next').innerHTML=singleLevel?'再玩一次 <i data-lucide="rotate-ccw"></i>':session.id===50?'返回选关 <i data-lucide="grid-2x2"></i>':'下一关 <i data-lucide="arrow-right"></i>';
   refreshIcons();
   $('success').showModal();
 }
@@ -215,7 +217,7 @@ $('next').addEventListener('click',()=>load(adjacentLevel(records,levels,session
 $('pause').addEventListener('click',togglePause);
 $('resume').addEventListener('click',togglePause);
 $('success-close').addEventListener('click',()=>$('success').close());
-$('success-next').addEventListener('click',()=>{if(session.id<50)load(session.id+1);else{$('success').close();setCatalog(true);}});
+$('success-next').addEventListener('click',()=>{if(singleLevel){$('success').close();$('restart').click();}else if(session.id<50)load(session.id+1);else{$('success').close();setCatalog(true);}});
 $('sound').addEventListener('click',()=>{
   muted=!muted;
   $('sound').setAttribute('aria-pressed',String(!muted));

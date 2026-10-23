@@ -6,9 +6,11 @@
     "extract": "node scripts/extract.mjs",
     "build": "node scripts/build.mjs",
     "build:single": "node scripts/build.mjs && node scripts/build-single.mjs",
+    "build:first": "node scripts/build-single.mjs --first-level",
     "test": "node --test tests/*.test.mjs",
     "audit": "node scripts/audit.mjs",
-    "test:browser": "node scripts/browser-check.mjs"
+    "test:browser": "node scripts/browser-check.mjs",
+    "test:first": "node scripts/browser-check-first.mjs"
   },
   "dependencies": {
     "lucide": "^0.468.0",

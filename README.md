@@ -1,5 +1,7 @@
 # 推箱子网页版
 
+仅第一关的独立版：打开 `推箱子第一关.html`，不显示选关和下一关，通关后可重新挑战。它只内嵌第一关数据和所需素材，进度与完整版分开保存。运行 `npm run build:first` 可重新生成。
+
 在线游玩：[GitHub Pages](https://qiuzizhao.github.io/Sokoban-Web/)。推送 `main` 后由 GitHub Actions 自动测试、构建并发布 `web/` 目录。
 
 打开 `web/index.html` 即可游玩，无需安装、联网或运行 BCM 播放器。
