@@ -1,6 +1,6 @@
 # 推箱子网页版
 
-仅第一关的独立版：打开 `推箱子第一关.html`，不显示选关和下一关，通关后可重新挑战。它只内嵌第一关数据和所需素材，进度与完整版分开保存。运行 `npm run build:first` 可重新生成。
+仅第一关的独立版：打开 `推箱子第一关.html`，不显示选关和下一关，通关后停留在棋盘，不弹窗，可用重开按钮重新挑战。它只内嵌第一关数据和所需素材，进度与完整版分开保存。运行 `npm run build:first` 可重新生成。
 
 在线游玩：[完整版](https://qiuzizhao.github.io/Sokoban-Web/) · [仅第一关](https://qiuzizhao.github.io/Sokoban-Web/first-level.html)。推送 `main` 后由 GitHub Actions 自动测试，通过 `npm run build:pages` 构建并发布两个版本。
 

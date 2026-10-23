@@ -184,6 +184,7 @@ function recordWin() {
   const previous=records[session.id];
   if(!completed(session.id)||session.moves<previous.moves||(session.moves===previous.moves&&session.pushes<previous.pushes)) records[session.id]={moves:session.moves,pushes:session.pushes};
   persist();renderCatalog();sound('win');
+  if(singleLevel)return;
   $('success-stats').textContent=`第 ${String(session.id).padStart(2,'0')} 关 · ${session.moves} 步 · ${session.pushes} 次推动`;
   $('success-next').innerHTML=singleLevel?'再玩一次 <i data-lucide="rotate-ccw"></i>':session.id===50?'返回选关 <i data-lucide="grid-2x2"></i>':'下一关 <i data-lucide="arrow-right"></i>';
   refreshIcons();
