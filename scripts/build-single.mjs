@@ -19,7 +19,7 @@ const embedded=Object.fromEntries(Object.entries(assets).filter(([name])=>!first
   return [name,`data:${type};base64,${bytes.toString('base64')}`];
 }));
 const result=await build({
-  entryPoints:['web/app.js'],bundle:true,write:false,format:'iife',minify:true,target:classroom?['chrome79']:['es2020'],legalComments:'eof',
+  entryPoints:['web/app.js'],bundle:true,write:false,format:'iife',minify:true,target:(classroom||firstLevel)?['chrome79']:['es2020'],legalComments:'eof',
   plugins:[{name:'embedded-assets',setup(builder){
     builder.onLoad({filter:/[\\/]web[\\/]assets\.js$/},()=>({contents:`export const assets = ${JSON.stringify(embedded)};`,loader:'js'}));
     if(firstLevel)builder.onLoad({filter:/[\\/]web[\\/]levels\.js$/},()=>({contents:`export const levels = ${JSON.stringify(levels.slice(0,1))};`,loader:'js'}));
@@ -27,7 +27,7 @@ const result=await build({
 });
 const script=result.outputFiles[0].text.replace(/<\/script/gi,'<\\/script');
 let css=fs.readFileSync('web/style.css','utf8');
-if(classroom){
+if(classroom||firstLevel){
   css=css.replace('aspect-ratio:1;','height:38px;')
     .replaceAll('inset:0;','top:0;right:0;bottom:0;left:0;')
     .replace('inset:70px 0 0;','top:70px;right:0;bottom:0;left:0;')
@@ -48,6 +48,11 @@ if(firstLevel){
 }
 html=html.replace('<link rel="stylesheet" href="style.css">',`<style>${css}</style>`);
 html=html.replace('<script src="game.js"></script>',()=>`<script>${script}</script>`);
+if(firstLevel&&!classroom){
+  const head=fs.readFileSync(new URL('./first-level-head.html',import.meta.url),'utf8');
+  html=html.replace('</head>',()=>`${head}\n</head>`);
+  html=html.replace('href="#" aria-label="推箱子"','aria-label="推箱子"');
+}
 if(classroom){
   const project=path.dirname(path.resolve(output));
   const instructions=fs.readFileSync(path.join(project,'AGENTS.md'),'utf8');

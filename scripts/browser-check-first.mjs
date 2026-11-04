@@ -11,13 +11,18 @@ const directory=fs.mkdtempSync(path.join(os.tmpdir(),'sokoban-first-'));
 const file=path.join(directory,'game.html');
 fs.copyFileSync('推箱子第一关.html',file);
 const url=pathToFileURL(file).href;
-const browser=await chromium.launch({headless:true,executablePath:'C:/Users/Qiuzizhao/AppData/Local/ms-playwright/chromium-1148/chrome-win/chrome.exe'});
+const executablePath=process.env.EDGE || process.env.CHROME || ['C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe','C:/Program Files/Microsoft/Edge/Application/msedge.exe'].find(file=>fs.existsSync(file));
+const browser=await chromium.launch({headless:true,...(executablePath?{executablePath}:{})});
 try{
   const context=await browser.newContext({offline:true,viewport:{width:1024,height:768}});
   const page=await context.newPage(),errors=[],requests=[];
   page.on('pageerror',error=>errors.push(error.message));
   page.on('request',request=>{if(request.url()!==url&&!request.url().startsWith('data:'))requests.push(request.url());});
-  await page.addInitScript(()=>localStorage.setItem('sokoban-web-v1','full-version-sentinel'));
+  await page.addInitScript(()=>{
+    // Edge 79–85 lack this API; keep the regression active on modern browsers.
+    Element.prototype.replaceChildren=undefined;
+    localStorage.setItem('sokoban-web-v1','full-version-sentinel');
+  });
   await page.goto(url);
   await page.locator('.crate').first().waitFor();
   assert.equal(await page.locator('.level-cell').count(),1);
