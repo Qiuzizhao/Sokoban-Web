@@ -128,11 +128,15 @@ function fitBoard() {
     const height=Math.ceil(Math.max(160,Math.min(desiredHeight,availableHeight)));
     if(stage.style.height!==`${height}px`)stage.style.height=`${height}px`;
   }else stage.style.height='';
-  const cell=Math.floor(Math.min((stage.clientWidth-(mobile?24:40))/currentSource.width,(stage.clientHeight-(mobile?24:44))/currentSource.height,66));
+  const cell=Math.max(1,Math.floor(Math.min(
+    (stage.clientWidth-(mobile?24:32))/currentSource.width,
+    (stage.clientHeight-(mobile?24:36))/currentSource.height,
+    mobile?66:96,
+  )));
   const board=$('board');
-  board.style.setProperty('--cell',`${Math.max(12,cell)}px`);
-  board.style.width=`${Math.max(12,cell)*currentSource.width}px`;
-  board.style.height=`${Math.max(12,cell)*currentSource.height}px`;
+  board.style.setProperty('--cell',`${cell}px`);
+  board.style.width=`${cell*currentSource.width}px`;
+  board.style.height=`${cell*currentSource.height}px`;
 }
 function renderState(moveResult) {
   const width=session.level.board.width,board=$('board');

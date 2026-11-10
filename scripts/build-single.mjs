@@ -35,7 +35,7 @@ if(classroom||firstLevel){
     .replace('height:clamp(280px,48svh,500px);min-height:0;','height:48vh;min-height:280px;max-height:500px;')
     .replace('width:min(400px,calc(100% - 32px));','width:400px;max-width:calc(100% - 32px);');
   css+='\n@media(max-width:680px){.level-cell{height:56px}}\n';
-  const flexRules={'.brand':12,'.header-actions':8,'.game-heading':0,'.level-navigation':8,'.stats':24,'.stats>div':8,'.catalog-bottom':12,'.bottom-controls':18,'.tools':8,'.primary-button':10,'.secondary-button':10,'.success-actions':10};
+  const flexRules={'.brand':12,'.header-actions':8,'.level-navigation':8,'.stats':24,'.stats>div':8,'.catalog-bottom':12,'.primary-button':10,'.secondary-button':10,'.success-actions':10};
   for(const [selector,gap] of Object.entries(flexRules))if(gap)css+=`html.no-flexgap ${selector} > *:not(:last-child){margin-right:${gap}px}\n`;
   css+='@media(max-width:680px){html.no-flexgap .brand > *:not(:last-child){margin-right:9px}html.no-flexgap .header-actions > *:not(:last-child){margin-right:6px}html.no-flexgap .stats > *:not(:last-child){margin-right:14px}html.no-flexgap .stats>div > *:not(:last-child){margin-right:5px}html.no-flexgap .tools > *:not(:last-child){margin-right:6px}}';
   css+='@media(max-width:680px){html.no-flexgap .bottom-controls > *:not(:last-child){margin-right:12px;margin-bottom:0}html.no-flexgap .tools > *:not(:last-child){margin-right:0}}@media(max-width:360px){html.no-flexgap .bottom-controls > *:not(:last-child){margin-right:8px}}';
@@ -44,7 +44,6 @@ let html=fs.readFileSync('web/index.html','utf8');
 if(firstLevel){
   html=html.replace('<title>推箱子</title>','<title>推箱子 · 第一关</title>');
   html=html.replace('<body>','<body class="single-level">');
-  css+='\n.single-level .catalog,.single-level .level-navigation,.single-level #catalog-toggle{display:none!important}.single-level .layout{display:block;max-width:830px}.single-level .game{margin:0 auto}\n';
 }
 html=html.replace('<link rel="stylesheet" href="style.css">',`<style>${css}</style>`);
 html=html.replace('<script src="game.js"></script>',()=>`<script>${script}</script>`);
