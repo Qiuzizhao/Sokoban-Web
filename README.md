@@ -1,5 +1,7 @@
 # 推箱子网页版
 
+每关显示预先计算的最少总步数，走一格和推一次都算一步。用 `node scripts/solve-optimal-moves.mjs` 重新生成全部关卡的最短步数，或加 `--check` 核对已有数据。游戏运行时只读取结果。
+
 仅第一关的独立版：打开 `推箱子第一关.html`，不显示选关和下一关，通关后停留在棋盘，不弹窗，可用重开按钮重新挑战。它只内嵌第一关数据和所需素材，进度与完整版分开保存。运行 `npm run build:first` 可重新生成。 单关版按 Edge 79 / Chrome 79 构建，补齐旧版缺少的 `replaceChildren()`，并带布局回退；`npm run test:first` 会在现代浏览器中移除该 API 后验证启动、通关和独立存档。可用 `EDGE` 或 `CHROME` 环境变量指定测试浏览器。
 
 在线游玩：[完整版](https://qiuzizhao.github.io/Sokoban-Web/) · [仅第一关](https://qiuzizhao.github.io/Sokoban-Web/first-level.html)。推送 `main` 后由 GitHub Actions 自动测试，通过 `npm run build:pages` 构建并发布两个版本。

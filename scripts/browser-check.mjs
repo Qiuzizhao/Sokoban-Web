@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import assert from 'node:assert/strict';
 import { parseLevel, solveSokoban } from 'miaoda-game-sokoban-core';
 import { assets } from '../web/assets.js';
+import { optimalMoves } from '../web/optimal-moves.js';
 import { GameSession } from '../web/session.js';
 const executablePath='C:/Users/Qiuzizhao/AppData/Local/ms-playwright/chromium-1148/chrome-win/chrome.exe';
 const browser=await chromium.launch({headless:true,executablePath});
@@ -79,6 +80,7 @@ try {
   for(const solution of solutions){
     await page.locator(`[data-page="${solution.id<=25?0:1}"]`).click();
     await page.getByRole('button',{name:new RegExp(`^第 ${solution.id} 关(?:，已通关)?$`)}).click();
+    assert.equal(await page.locator('#optimal-moves').textContent(),String(optimalMoves[solution.id]),`optimal move count for level ${solution.id}`);
     const bounds=await page.locator('#board').boundingBox(),stage=await page.locator('#board-stage').boundingBox();
     assert.ok(bounds.width<=stage.width&&bounds.height<=stage.height,`level ${solution.id} fits`);
     if(solution.id>1)assert.equal(await page.locator('#next').isDisabled(),true,`level ${solution.id} must be cleared first`);

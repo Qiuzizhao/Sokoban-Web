@@ -3,6 +3,7 @@ import { levels } from './levels.js';
 import { assets } from './assets.js';
 import { GameSession } from './session.js';
 import { isCompleted, latestLevel, canEnterLevel, adjacentLevel } from './progression.js';
+import { optimalMoves } from './optimal-moves.js';
 
 const icons = {ArrowUp,ArrowDown,ArrowLeft,ArrowRight,ChevronLeft,ChevronRight,Undo2,Redo2,RotateCcw,Pause,Play,Grid2x2,VolumeX,Volume2,Maximize,Minimize,Footprints,Box,CircleCheck,Check,LockKeyhole,X};
 const $ = id => document.getElementById(id);
@@ -177,6 +178,7 @@ function load(id,restore) {
   setCatalog(false);
   if($('success').open) $('success').close();
   $('level-number').textContent=String(source.id).padStart(2,'0');
+  $('optimal-moves').textContent=optimalMoves[source.id];
   replaceIcon($('pause'),'pause','暂停');
   renderBoard();renderState();renderCatalog();scheduleSave();
 }
