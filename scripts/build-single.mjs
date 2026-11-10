@@ -44,7 +44,10 @@ let html=fs.readFileSync('web/index.html','utf8');
 if(firstLevel){
   html=html.replace('<title>推箱子</title>','<title>推箱子 · 第一关</title>');
   html=html.replace('<body>','<body class="single-level">');
+  // The first level's minimum is 13 moves, verified by BFS over individual steps.
+  html=html.replace('<div class="level-navigation">','<p class="optimal-moves">最优解 <strong>13</strong> 步</p><div class="level-navigation">');
   css+='\n.single-level .catalog,.single-level .level-navigation,.single-level #catalog-toggle{display:none!important}.single-level .layout{display:block;max-width:830px}.single-level .game{margin:0 auto}\n';
+  css+='.optimal-moves{margin:0;color:#215c43;font-size:13px;white-space:nowrap}.optimal-moves strong{font-size:19px;font-variant-numeric:tabular-nums}\n';
 }
 html=html.replace('<link rel="stylesheet" href="style.css">',`<style>${css}</style>`);
 html=html.replace('<script src="game.js"></script>',()=>`<script>${script}</script>`);

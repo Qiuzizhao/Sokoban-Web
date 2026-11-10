@@ -30,8 +30,11 @@ try{
   assert.equal(await page.locator('.level-navigation').isVisible(),false);
   assert.equal(await page.locator('#catalog').isVisible(),false);
   assert.equal(await page.locator('#next').isDisabled(),true);
+  const optimalMoves=page.getByText('最优解 13 步',{exact:true});
+  assert.equal(await optimalMoves.isVisible(),true);
   await page.keyboard.press('ArrowRight');
   assert.equal(await page.locator('#moves').textContent(),'1');
+  assert.equal(await optimalMoves.isVisible(),true);
   await page.locator('#undo').click();assert.equal(await page.locator('#moves').textContent(),'0');
   await page.locator('#redo').click();assert.equal(await page.locator('#moves').textContent(),'1');
   await page.locator('#restart').click();
