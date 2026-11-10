@@ -4,6 +4,7 @@ import { assets } from './assets.js';
 import { GameSession } from './session.js';
 import { isCompleted, latestLevel, canEnterLevel, adjacentLevel } from './progression.js';
 import { optimalMoves } from './optimal-moves.js';
+import { playVictory, stopVictory } from './victory.js';
 
 const icons = {ArrowUp,ArrowDown,ArrowLeft,ArrowRight,ChevronLeft,ChevronRight,Undo2,Redo2,RotateCcw,Pause,Play,Grid2x2,VolumeX,Volume2,Maximize,Minimize,Footprints,Box,CircleCheck,Check,LockKeyhole,X};
 const $ = id => document.getElementById(id);
@@ -180,32 +181,37 @@ function load(id,restore) {
   if(restore) {try {session.resume(restore);} catch {notify('存档已重置');}}
   page=Math.floor((source.id-1)/25);
   setCatalog(false);
+  stopVictory();
   if($('success').open) $('success').close();
   $('level-number').textContent=String(source.id).padStart(2,'0');
   $('optimal-moves').textContent=optimalMoves[source.id];
   replaceIcon($('pause'),'pause','暂停');
   renderBoard();renderState();renderCatalog();scheduleSave();
 }
-function recordWin() {
+function recordWin(celebrate=false) {
   const previous=records[session.id];
   if(!completed(session.id)||session.moves<previous.moves||(session.moves===previous.moves&&session.pushes<previous.pushes)) records[session.id]={moves:session.moves,pushes:session.pushes};
   persist();renderCatalog();sound('win');
-  if(singleLevel)return;
-  $('success-stats').textContent=`第 ${String(session.id).padStart(2,'0')} 关 · ${session.moves} 步 · ${session.pushes} 次推动`;
-  $('success-next').innerHTML=singleLevel?'再玩一次 <i data-lucide="rotate-ccw"></i>':session.id===50?'返回选关 <i data-lucide="grid-2x2"></i>':'下一关 <i data-lucide="arrow-right"></i>';
-  refreshIcons();
-  $('success').showModal();
+  if(singleLevel) {
+    if(celebrate) notify('全部归位！');
+  } else {
+    $('success-stats').textContent=`第 ${String(session.id).padStart(2,'0')} 关 · ${session.moves} 步 · ${session.pushes} 次推动`;
+    $('success-next').innerHTML=session.id===50?'返回选关 <i data-lucide="grid-2x2"></i>':'下一关 <i data-lucide="arrow-right"></i>';
+    refreshIcons();
+    $('success').showModal();
+  }
+  if(celebrate) playVictory();
 }
 function move(direction) {
   if($('success').open||$('catalog').classList.contains('open')) return;
   const result=session.move(direction);
   if(!result.ok) return;
   notify('');renderState(result.move);scheduleSave();
-  if(session.solved) recordWin();
+  if(session.solved) recordWin(true);
   else if(result.move.kind==='push') sound('push');
 }
 function undo() {
-  if(session.undo()) {notify('');renderState();scheduleSave();}
+  if(session.undo()) {stopVictory();notify('');renderState();scheduleSave();}
 }
 function redo() {
   if(session.redo()) {renderState();scheduleSave();if(session.solved) recordWin();}
@@ -218,11 +224,12 @@ function togglePause() {
 }
 $('undo').addEventListener('click',undo);
 $('redo').addEventListener('click',redo);
-$('restart').addEventListener('click',()=>{session.restart();notify('');replaceIcon($('pause'),'pause','暂停');renderState();scheduleSave();});
+$('restart').addEventListener('click',()=>{stopVictory();session.restart();notify('');replaceIcon($('pause'),'pause','暂停');renderState();scheduleSave();});
 $('previous').addEventListener('click',()=>load(adjacentLevel(records,levels,session.id,-1)));
 $('next').addEventListener('click',()=>load(adjacentLevel(records,levels,session.id,1)));
 $('pause').addEventListener('click',togglePause);
 $('resume').addEventListener('click',togglePause);
+$('success').addEventListener('close',()=>{if(!$('success').open) stopVictory();});
 $('success-close').addEventListener('click',()=>$('success').close());
 $('success-next').addEventListener('click',()=>{if(singleLevel){$('success').close();$('restart').click();}else if(session.id<50)load(session.id+1);else{$('success').close();setCatalog(true);}});
 $('sound').addEventListener('click',()=>{
