@@ -31,12 +31,11 @@ test('walls and blocked pushes never mutate state or history',()=>{
   assert.equal(game.move('up').ok,false);assert.equal(game.move('right').ok,false);
   assert.deepEqual(game.snapshot(),initial);assert.equal(game.history.length,0);
 });
-test('new moves clear redo, pause stops movement, restart clears history',()=>{
+test('new moves clear redo and restart clears history',()=>{
   const game=new GameSession(small);
   game.move('left');game.undo();assert.equal(game.future.length,1);
   game.move('left');assert.equal(game.future.length,0);
-  game.paused=true;assert.equal(game.move('right').ok,false);assert.equal(game.undo(),false);
-  game.restart();assert.equal(game.moves,0);assert.equal(game.history.length,0);assert.equal(game.paused,false);
+  game.restart();assert.equal(game.moves,0);assert.equal(game.history.length,0);
 });
 test('save/resume preserves current state, undo and redo; corrupted saves are rejected',()=>{
   const game=new GameSession(small);game.move('left');game.move('right');game.undo();

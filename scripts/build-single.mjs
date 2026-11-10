@@ -29,7 +29,6 @@ const script=result.outputFiles[0].text.replace(/<\/script/gi,'<\\/script');
 let css=fs.readFileSync('web/style.css','utf8');
 if(classroom||firstLevel){
   css=css.replace('aspect-ratio:1;','height:38px;')
-    .replaceAll('inset:0;','top:0;right:0;bottom:0;left:0;')
     .replace('inset:70px 0 0;','top:70px;right:0;bottom:0;left:0;')
     .replace('height:min(53vh,500px);','height:53vh;max-height:500px;')
     .replace('height:clamp(280px,48svh,500px);min-height:0;','height:48vh;min-height:280px;max-height:500px;')

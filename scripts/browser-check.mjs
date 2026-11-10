@@ -7,7 +7,7 @@ import { parseLevel, solveSokoban } from 'miaoda-game-sokoban-core';
 import { assets } from '../web/assets.js';
 import { optimalMoves } from '../web/optimal-moves.js';
 import { GameSession } from '../web/session.js';
-const executablePath='C:/Users/Qiuzizhao/AppData/Local/ms-playwright/chromium-1148/chrome-win/chrome.exe';
+const executablePath=process.env.EDGE || process.env.CHROME || 'C:/Users/Qiuzizhao/AppData/Local/ms-playwright/chromium-1148/chrome-win/chrome.exe';
 const browser=await chromium.launch({headless:true,executablePath});
 const errors=[];
 fs.mkdirSync('qa',{recursive:true});
@@ -44,14 +44,14 @@ try {
   assert.equal(await page.locator('.player').getAttribute('style'),initial);
   await page.locator('#redo').click();
   assert.equal(await page.locator('#moves').textContent(),'1');
-  await page.locator('#pause').click();
-  await page.keyboard.press('ArrowDown');
-  assert.equal(await page.locator('#moves').textContent(),'1');
-  await page.locator('#resume').click();
+  assert.deepEqual(await page.locator('.tools button').evaluateAll(buttons=>buttons.map(button=>button.id)),['undo','redo','restart']);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('ArrowLeft');
+  assert.equal(await page.locator('#moves').textContent(),'2');
   await page.waitForTimeout(250);
   await page.reload();
   await page.locator('.crate').first().waitFor();
-  assert.equal(await page.locator('#moves').textContent(),'1');
+  assert.equal(await page.locator('#moves').textContent(),'2');
   await page.locator('#restart').click();
   const retainedCrate=await page.locator('.crate').first().elementHandle();
   await page.keyboard.press('ArrowRight');
@@ -59,9 +59,6 @@ try {
   await page.locator('#restart').click();
   await page.locator('#sound').click();
   await page.waitForFunction(()=>window.__qaAudio.some(a=>a.loop&&!a.paused));
-  await page.locator('#pause').click();
-  assert.equal(await page.evaluate(()=>window.__qaAudio.filter(a=>a.loop).every(a=>a.paused)),true);
-  await page.locator('#resume').click();
   await page.locator('#sound').click();
   assert.equal(await page.evaluate(()=>window.__qaAudio.filter(a=>a.loop).every(a=>a.paused)),true);
   const levels=JSON.parse(fs.readFileSync('extracted/levels.json','utf8'));
@@ -160,7 +157,7 @@ try {
   }finally{await legacyContext.close();}
   assert.deepEqual(errors,[]);
   if(standalone)assert.deepEqual(externalRequests,[]);
-  const report={status:'passed',standalone,offline:standalone,externalRequests:standalone?externalRequests:undefined,levelsPlayedToVictory:50,audioFilesDecoded:audioResults.length,checks:['sequential unlocking','locked navigation','legacy progress migration','completed level replay','keyboard','push/victory','undo/redo','pause','save/reload','retained box nodes','music pause/mute','touch buttons','swipe','images','desktop layout','390px layout','320px layout'],runtimeErrors:errors};
+  const report={status:'passed',standalone,offline:standalone,externalRequests:standalone?externalRequests:undefined,levelsPlayedToVictory:50,audioFilesDecoded:audioResults.length,checks:['sequential unlocking','locked navigation','legacy progress migration','completed level replay','keyboard','push/victory','undo/redo','save/reload','retained box nodes','music mute','touch buttons','swipe','images','desktop layout','390px layout','320px layout'],runtimeErrors:errors};
   fs.writeFileSync(`qa/${standalone?'single-file-report':'browser-report'}.json`,JSON.stringify(report,null,2));
   console.log(JSON.stringify(report));
 } finally {await browser.close();}

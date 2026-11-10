@@ -13,7 +13,7 @@ export class GameSession {
   snapshot() { return {level:this.level, moves:this.moves, pushes:this.pushes, facing:this.facing}; }
   restore(snapshot) { Object.assign(this, snapshot); }
   move(direction) {
-    if (this.paused || this.solved) return {ok:false, code:'inactive'};
+    if (this.solved) return {ok:false, code:'inactive'};
     const result = applyMove(this.level, direction);
     if (!result.ok) return result;
     this.history.push(this.snapshot());
@@ -25,13 +25,13 @@ export class GameSession {
     return result;
   }
   undo() {
-    if (this.paused || !this.history.length) return false;
+    if (!this.history.length) return false;
     this.future.push(this.snapshot());
     this.restore(this.history.pop());
     return true;
   }
   redo() {
-    if (this.paused || !this.future.length) return false;
+    if (!this.future.length) return false;
     this.history.push(this.snapshot());
     this.restore(this.future.pop());
     return true;
@@ -43,7 +43,6 @@ export class GameSession {
     this.facing = 'down';
     this.history = [];
     this.future = [];
-    this.paused = false;
   }
   serialize() {
     const compact = s => ({state:s.level.state,moves:s.moves,pushes:s.pushes,facing:s.facing});

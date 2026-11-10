@@ -1,4 +1,4 @@
-import { createIcons, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Undo2, Redo2, RotateCcw, Pause, Play, Grid2x2, VolumeX, Volume2, Maximize, Minimize, Footprints, Box, CircleCheck, Check, LockKeyhole, X } from 'lucide';
+import { createIcons, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Undo2, Redo2, RotateCcw, Grid2x2, VolumeX, Volume2, Maximize, Minimize, Footprints, Box, CircleCheck, Check, LockKeyhole, X } from 'lucide';
 import { levels } from './levels.js';
 import { assets } from './assets.js';
 import { GameSession } from './session.js';
@@ -6,7 +6,7 @@ import { isCompleted, latestLevel, canEnterLevel, adjacentLevel } from './progre
 import { optimalMoves } from './optimal-moves.js';
 import { playVictory, stopVictory } from './victory.js';
 
-const icons = {ArrowUp,ArrowDown,ArrowLeft,ArrowRight,ChevronLeft,ChevronRight,Undo2,Redo2,RotateCcw,Pause,Play,Grid2x2,VolumeX,Volume2,Maximize,Minimize,Footprints,Box,CircleCheck,Check,LockKeyhole,X};
+const icons = {ArrowUp,ArrowDown,ArrowLeft,ArrowRight,ChevronLeft,ChevronRight,Undo2,Redo2,RotateCcw,Grid2x2,VolumeX,Volume2,Maximize,Minimize,Footprints,Box,CircleCheck,Check,LockKeyhole,X};
 const $ = id => document.getElementById(id);
 const singleLevel=levels.length===1;
 const storageKey = singleLevel?'sokoban-first-level-v1':'sokoban-web-v1';
@@ -33,7 +33,7 @@ function sound(name) {
 function updateMusic() {
   const active=$('catalog').classList.contains('open')?'catalog':'game';
   for(const [name,audio] of Object.entries(music)){
-    if(muted||document.hidden||session?.paused||session?.solved||name!==active)audio.pause();
+    if(muted||document.hidden||session?.solved||name!==active)audio.pause();
     else audio.play().catch(()=>{});
   }
 }
@@ -162,11 +162,9 @@ function renderState(moveResult) {
   $('pushes').textContent=session.pushes;
   $('goals').textContent=`${session.onGoals} / ${session.level.state.boxes.length}`;
   $('board').setAttribute('aria-label',`第 ${session.id} 关，${session.moves} 步，${session.onGoals} 个箱子归位，共 ${session.level.state.boxes.length} 个`);
-  $('undo').disabled=!session.history.length||session.paused;
-  $('redo').disabled=!session.future.length||session.paused;
-  document.querySelectorAll('[data-direction]').forEach(b=>b.disabled=session.paused||session.solved);
-  $('pause').disabled=session.solved;
-  $('pause-cover').hidden=!session.paused;
+  $('undo').disabled=!session.history.length;
+  $('redo').disabled=!session.future.length;
+  document.querySelectorAll('[data-direction]').forEach(b=>b.disabled=session.solved);
   updateMusic();
 }
 function load(id,restore) {
@@ -185,7 +183,6 @@ function load(id,restore) {
   if($('success').open) $('success').close();
   $('level-number').textContent=String(source.id).padStart(2,'0');
   $('optimal-moves').textContent=optimalMoves[source.id];
-  replaceIcon($('pause'),'pause','暂停');
   renderBoard();renderState();renderCatalog();scheduleSave();
 }
 function recordWin(celebrate=false) {
@@ -216,19 +213,11 @@ function undo() {
 function redo() {
   if(session.redo()) {renderState();scheduleSave();if(session.solved) recordWin();}
 }
-function togglePause() {
-  if(session.solved) return;
-  session.paused=!session.paused;
-  replaceIcon($('pause'),session.paused?'play':'pause',session.paused?'继续':'暂停');
-  renderState();
-}
 $('undo').addEventListener('click',undo);
 $('redo').addEventListener('click',redo);
-$('restart').addEventListener('click',()=>{stopVictory();session.restart();notify('');replaceIcon($('pause'),'pause','暂停');renderState();scheduleSave();});
+$('restart').addEventListener('click',()=>{stopVictory();session.restart();notify('');renderState();scheduleSave();});
 $('previous').addEventListener('click',()=>load(adjacentLevel(records,levels,session.id,-1)));
 $('next').addEventListener('click',()=>load(adjacentLevel(records,levels,session.id,1)));
-$('pause').addEventListener('click',togglePause);
-$('resume').addEventListener('click',togglePause);
 $('success').addEventListener('close',()=>{if(!$('success').open) stopVictory();});
 $('success-close').addEventListener('click',()=>$('success').close());
 $('success-next').addEventListener('click',()=>{if(singleLevel){$('success').close();$('restart').click();}else if(session.id<50)load(session.id+1);else{$('success').close();setCatalog(true);}});
@@ -258,11 +247,10 @@ document.addEventListener('keydown',event=>{
   else if(key==='z'){event.preventDefault();undo();}
   else if(key==='y'){event.preventDefault();redo();}
   else if(key==='r'&&!event.repeat){event.preventDefault();$('restart').click();}
-  else if(key==='Escape'&&!event.repeat){event.preventDefault();togglePause();}
 });
 let touchStart;
 $('board-stage').addEventListener('pointerdown',event=>{
-  if(event.pointerType==='mouse'||session.paused||session.solved)return;
+  if(event.pointerType==='mouse'||session.solved)return;
   touchStart={x:event.clientX,y:event.clientY,id:event.pointerId};
   if(event.isTrusted)$('board-stage').setPointerCapture(event.pointerId);
 });
