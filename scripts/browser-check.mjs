@@ -133,8 +133,27 @@ try {
     await page.locator('#undo').click();
     await page.locator('#catalog-toggle').click();
     await page.screenshot({path:`qa/catalog-${viewport.width}.png`,fullPage:true});
-    await page.locator('#catalog-close').click();
+    await page.setViewportSize({width:844,height:390});
+    await page.waitForFunction(()=>document.getElementById('catalog-toggle').getAttribute('aria-expanded')==='false');
+    await page.locator('[data-direction="right"]').click();
+    assert.equal(await page.locator('#moves').textContent(),'1','Rotating with the catalog open must restore movement');
+    await page.keyboard.press('ArrowLeft');
+    assert.equal(await page.locator('#moves').textContent(),'2');
   }
+  const sharedContext=await browser.newContext({offline:standalone});
+  try{
+    const playing=await sharedContext.newPage(),idle=await sharedContext.newPage();
+    for(const tab of [playing,idle]){
+      tab.on('pageerror',error=>errors.push(error.message));
+      await tab.goto(url);
+      await tab.locator('.crate').first().waitFor();
+    }
+    for(const direction of solution.directions)await playing.keyboard.press(keys[direction]);
+    await idle.goto('about:blank');
+    const saved=await playing.evaluate(()=>JSON.parse(localStorage.getItem('sokoban-web-v1')));
+    assert.equal(saved.records[1].moves,solution.directions.length,'Closing an idle tab must preserve the other tab’s victory');
+    assert.equal(saved.current.moves,solution.directions.length);
+  }finally{await sharedContext.close();}
   const legacyContext=await browser.newContext({offline:standalone});
   const legacyPage=await legacyContext.newPage();
   legacyPage.on('pageerror',error=>errors.push(error.message));
@@ -157,7 +176,7 @@ try {
   }finally{await legacyContext.close();}
   assert.deepEqual(errors,[]);
   if(standalone)assert.deepEqual(externalRequests,[]);
-  const report={status:'passed',standalone,offline:standalone,externalRequests:standalone?externalRequests:undefined,levelsPlayedToVictory:50,audioFilesDecoded:audioResults.length,checks:['sequential unlocking','locked navigation','legacy progress migration','completed level replay','keyboard','push/victory','undo/redo','save/reload','retained box nodes','music mute','touch buttons','swipe','images','desktop layout','390px layout','320px layout'],runtimeErrors:errors};
+  const report={status:'passed',standalone,offline:standalone,externalRequests:standalone?externalRequests:undefined,levelsPlayedToVictory:50,audioFilesDecoded:audioResults.length,checks:['sequential unlocking','locked navigation','legacy progress migration','completed level replay','keyboard','push/victory','undo/redo','save/reload','idle tab save protection','retained box nodes','music mute','touch buttons','swipe','images','desktop layout','390px layout','320px layout','catalog rotation'],runtimeErrors:errors};
   fs.writeFileSync(`qa/${standalone?'single-file-report':'browser-report'}.json`,JSON.stringify(report,null,2));
   console.log(JSON.stringify(report));
 } finally {await browser.close();}

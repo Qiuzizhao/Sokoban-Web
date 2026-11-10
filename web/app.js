@@ -10,12 +10,21 @@ const icons = {ArrowUp,ArrowDown,ArrowLeft,ArrowRight,ChevronLeft,ChevronRight,U
 const $ = id => document.getElementById(id);
 const singleLevel=levels.length===1;
 const storageKey = singleLevel?'sokoban-first-level-v1':'sokoban-web-v1';
+const mobileLayout=window.matchMedia('(max-width:680px)');
 let records = {}, muted = true, savedGame, storageAvailable = true;
+let currentVersion=0, pendingCurrentVersion=0, soundDirty=false;
+function parseSave(raw) {
+  try {return JSON.parse(raw)||{};} catch {return {};}
+}
+function saveVersion(saved) {
+  return Number.isSafeInteger(saved.currentVersion)&&saved.currentVersion>0?saved.currentVersion:0;
+}
 try {
-  const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
+  const saved = parseSave(localStorage.getItem(storageKey));
   if (saved.records && typeof saved.records === 'object' && !Array.isArray(saved.records)) records = saved.records;
   muted = saved.muted !== false;
   savedGame = saved.current;
+  currentVersion=saveVersion(saved);
 } catch { storageAvailable = false; }
 let session, currentSource, playerElement, page = 0, saveTimer, statusTimer;
 const crateElements=new Map();
@@ -31,23 +40,60 @@ function sound(name) {
   audio.play().catch(()=>{});
 }
 function updateMusic() {
-  const active=$('catalog').classList.contains('open')?'catalog':'game';
+  const active=catalogOpen()?'catalog':'game';
   for(const [name,audio] of Object.entries(music)){
     if(muted||document.hidden||session?.solved||name!==active)audio.pause();
     else audio.play().catch(()=>{});
   }
 }
+function catalogOpen() {
+  return !singleLevel&&mobileLayout.matches&&$('catalog').classList.contains('open');
+}
 function setCatalog(open) {
+  open=open&&!singleLevel&&mobileLayout.matches;
   $('catalog').classList.toggle('open',open);
   $('catalog-toggle').setAttribute('aria-expanded',String(open));
   updateMusic();
 }
+function keepBest(id,candidate) {
+  const previous=records[id];
+  if(completed(id)&&!(candidate.moves<previous.moves||
+      (candidate.moves===previous.moves&&candidate.pushes<(previous.pushes??Infinity)))) return false;
+  records[id]=candidate;
+  return true;
+}
+function mergeRecords(saved) {
+  let changed=false;
+  if(saved) for(const {id} of levels) {
+    if(isCompleted(saved,id)&&keepBest(id,saved[id])) changed=true;
+  }
+  if(changed)renderCatalog();
+}
 function persist() {
   clearTimeout(saveTimer);
-  try { localStorage.setItem(storageKey, JSON.stringify({records,muted,current:session.serialize()})); }
+  if(!pendingCurrentVersion&&!soundDirty) return;
+  try {
+    const saved=parseSave(localStorage.getItem(storageKey));
+    const storedVersion=saveVersion(saved);
+    // A delayed save must preserve a newer move or selection from another tab.
+    const saveCurrent=pendingCurrentVersion>=storedVersion&&pendingCurrentVersion>0;
+    mergeRecords(saved.records);
+    const version=saveCurrent?pendingCurrentVersion:storedVersion;
+    localStorage.setItem(storageKey,JSON.stringify({
+      records,muted:soundDirty?muted:saved.muted!==false,
+      current:saveCurrent?session.serialize():saved.current,currentVersion:version,
+    }));
+    currentVersion=Math.max(currentVersion,version);
+    pendingCurrentVersion=0;
+    soundDirty=false;
+  }
   catch { storageAvailable = false; }
 }
-function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(persist,180); }
+function scheduleSave() {
+  pendingCurrentVersion=Math.max(Date.now(),currentVersion+1,pendingCurrentVersion+1);
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(persist,180);
+}
 function notify(message) {
   clearTimeout(statusTimer);
   $('status').textContent = message;
@@ -120,7 +166,7 @@ function renderBoard() {
 function fitBoard() {
   if (!currentSource) return;
   const stage=$('board-stage');
-  const mobile=window.matchMedia('(max-width:680px)').matches;
+  const mobile=mobileLayout.matches;
   if(mobile){
     const stageTop=stage.getBoundingClientRect().top+window.scrollY;
     const controlsHeight=document.querySelector('.bottom-controls').offsetHeight;
@@ -167,7 +213,7 @@ function renderState(moveResult) {
   document.querySelectorAll('[data-direction]').forEach(b=>b.disabled=session.solved);
   updateMusic();
 }
-function load(id,restore) {
+function load(id,restore,saveSelection=true) {
   if(!canEnterLevel(records,levels,id)){
     if(session){notify('该关卡尚未解锁');return;}
     id=latestLevel(records,levels)||levels[0].id;
@@ -183,11 +229,11 @@ function load(id,restore) {
   if($('success').open) $('success').close();
   $('level-number').textContent=String(source.id).padStart(2,'0');
   $('optimal-moves').textContent=optimalMoves[source.id];
-  renderBoard();renderState();renderCatalog();scheduleSave();
+  renderBoard();renderState();renderCatalog();
+  if(saveSelection) scheduleSave();
 }
 function recordWin(celebrate=false) {
-  const previous=records[session.id];
-  if(!completed(session.id)||session.moves<previous.moves||(session.moves===previous.moves&&session.pushes<previous.pushes)) records[session.id]={moves:session.moves,pushes:session.pushes};
+  keepBest(session.id,{moves:session.moves,pushes:session.pushes});
   persist();renderCatalog();sound('win');
   if(singleLevel) {
     if(celebrate) notify('全部归位！');
@@ -200,7 +246,7 @@ function recordWin(celebrate=false) {
   if(celebrate) playVictory();
 }
 function move(direction) {
-  if($('success').open||$('catalog').classList.contains('open')) return;
+  if($('success').open||catalogOpen()) return;
   const result=session.move(direction);
   if(!result.ok) return;
   notify('');renderState(result.move);scheduleSave();
@@ -223,6 +269,7 @@ $('success-close').addEventListener('click',()=>$('success').close());
 $('success-next').addEventListener('click',()=>{if(singleLevel){$('success').close();$('restart').click();}else if(session.id<50)load(session.id+1);else{$('success').close();setCatalog(true);}});
 $('sound').addEventListener('click',()=>{
   muted=!muted;
+  soundDirty=true;
   $('sound').setAttribute('aria-pressed',String(!muted));
   replaceIcon($('sound'),muted?'volume-x':'volume-2',muted?'开启音效':'关闭音效');
   if(!muted) sound('push');updateMusic();persist();
@@ -233,7 +280,7 @@ $('fullscreen').addEventListener('click',async()=>{
 });
 document.addEventListener('fullscreenchange',()=>replaceIcon($('fullscreen'),document.fullscreenElement?'minimize':'maximize',document.fullscreenElement?'退出全屏':'全屏'));
 $('catalog-toggle').setAttribute('aria-expanded','false');
-$('catalog-toggle').addEventListener('click',()=>setCatalog(!$('catalog').classList.contains('open')));
+$('catalog-toggle').addEventListener('click',()=>setCatalog(!catalogOpen()));
 $('catalog-close').addEventListener('click',()=>setCatalog(false));
 document.querySelectorAll('[data-page]').forEach(button=>button.addEventListener('click',()=>{page=Number(button.dataset.page);renderCatalog();}));
 document.querySelectorAll('[data-direction]').forEach(button=>button.addEventListener('click',()=>move(button.dataset.direction)));
@@ -241,7 +288,7 @@ const keyDirections={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'
 document.addEventListener('keydown',event=>{
   if(event.ctrlKey||event.metaKey||event.altKey||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;
   if($('success').open)return;
-  if($('catalog').classList.contains('open')){if(event.key==='Escape')setCatalog(false);return;}
+  if(catalogOpen()){if(event.key==='Escape')setCatalog(false);return;}
   const key=event.key.length===1?event.key.toLowerCase():event.key;
   if(keyDirections[key]){event.preventDefault();move(keyDirections[key]);}
   else if(key==='z'){event.preventDefault();undo();}
@@ -263,10 +310,19 @@ $('board-stage').addEventListener('pointerup',event=>{
 $('board-stage').addEventListener('pointercancel',()=>touchStart=null);
 window.addEventListener('pagehide',persist);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)persist();updateMusic();});
+window.addEventListener('storage',event=>{
+  if(event.key!==storageKey||event.storageArea!==localStorage) return;
+  const saved=parseSave(event.newValue);
+  currentVersion=Math.max(currentVersion,saveVersion(saved));
+  mergeRecords(saved.records);
+});
 new ResizeObserver(fitBoard).observe($('board-stage'));
-window.addEventListener('resize',fitBoard);
+window.addEventListener('resize',()=>{
+  if(!mobileLayout.matches&&$('catalog').classList.contains('open')) setCatalog(false);
+  fitBoard();
+});
 replaceIcon($('sound'),muted?'volume-x':'volume-2',muted?'开启音效':'关闭音效');
 $('sound').setAttribute('aria-pressed',String(!muted));
-load(Number.isInteger(savedGame?.id)?savedGame.id:1,savedGame);
+load(Number.isInteger(savedGame?.id)?savedGame.id:1,savedGame,false);
 if(!storageAvailable)notify('当前浏览器无法保存进度');
 refreshIcons();
