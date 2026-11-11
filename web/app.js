@@ -324,6 +324,7 @@ function showDemonstrationControls(active) {
   document.querySelector('.tools').hidden=active;
   document.querySelector('.dpad').hidden=active;
   $('show-solution').disabled=active;
+  $('hint-toggle').disabled=active;
 }
 function refreshDemonstration() {
   const {view,steps,playing}=demonstration;

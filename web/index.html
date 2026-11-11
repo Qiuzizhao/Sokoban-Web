@@ -12,6 +12,7 @@
     <a class="brand" href="#" aria-label="推箱子"><img src="assets/box.png" alt=""><span>推箱子<span class="brand-dot">.</span></span></a>
     <div class="header-actions">
       <button class="solution-trigger" id="show-solution">解法演示</button>
+      <button class="solution-trigger" id="hint-toggle" title="A* 辅助" aria-label="A* 辅助" aria-pressed="false">A*<span class="hint-caption"> 辅助</span></button>
       <button class="icon-button mobile-catalog" id="catalog-toggle" title="选择关卡" aria-label="选择关卡"><i data-lucide="grid-2x2"></i></button>
       <button class="icon-button" id="sound" title="开启音效" aria-label="开启音效" aria-pressed="false"><i data-lucide="volume-x"></i></button>
       <button class="icon-button" id="fullscreen" title="全屏" aria-label="全屏"><i data-lucide="maximize"></i></button>
@@ -31,7 +32,7 @@
       <div class="stats"><div><i data-lucide="footprints"></i><span>步数</span><strong id="moves">0</strong></div><div><i data-lucide="box"></i><span>推动</span><strong id="pushes">0</strong></div><div class="goal-stat"><i data-lucide="circle-check"></i><span>归位</span><strong id="goals">0 / 2</strong></div></div>
       <div class="board-stage" id="board-stage"><div id="board" class="board" tabindex="0" role="application" aria-label="推箱子棋盘"></div></div>
       <div class="bottom-controls">
-        <div class="tools"><button class="icon-button" id="undo" title="撤回" aria-label="撤回"><i data-lucide="undo-2"></i></button><button class="icon-button" id="redo" title="重做" aria-label="重做"><i data-lucide="redo-2"></i></button><button class="icon-button" id="restart" title="重新开始" aria-label="重新开始"><i data-lucide="rotate-ccw"></i></button><button class="icon-button" id="hint-toggle" title="A* 辅助" aria-label="A* 辅助" aria-pressed="false">A*</button></div>
+        <div class="tools"><button class="icon-button" id="undo" title="撤回" aria-label="撤回"><i data-lucide="undo-2"></i></button><button class="icon-button" id="redo" title="重做" aria-label="重做"><i data-lucide="redo-2"></i></button><button class="icon-button" id="restart" title="重新开始" aria-label="重新开始"><i data-lucide="rotate-ccw"></i></button></div>
         <div class="dpad" aria-label="方向控制"><button class="icon-button" data-direction="up" title="向上" aria-label="向上"><i data-lucide="arrow-up"></i></button><button class="icon-button" data-direction="left" title="向左" aria-label="向左"><i data-lucide="arrow-left"></i></button><button class="icon-button" data-direction="down" title="向下" aria-label="向下"><i data-lucide="arrow-down"></i></button><button class="icon-button" data-direction="right" title="向右" aria-label="向右"><i data-lucide="arrow-right"></i></button></div>
         <div class="solution-controls" id="solution-controls" role="group" aria-label="最优解播放控制" hidden>
           <p id="solution-progress"></p>
