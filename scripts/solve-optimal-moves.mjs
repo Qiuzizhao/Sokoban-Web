@@ -143,7 +143,7 @@ const paths={};
 const iterations=600000;
 const salt=seal?randomBytes(16):null;
 const password=seal?fs.readFileSync(0,'utf8').replace(/\r?\n$/,''):null;
-if(seal) assert.ok(password.length>=12,'Supply a password of at least 12 characters on stdin');
+if(seal) assert.ok(password.length>=8,'Supply a password of at least 8 characters on stdin');
 const key=seal?pbkdf2Sync(password,salt,iterations,32,'sha256'):null;
 for(const level of selected){
   const parsed=parseLevel(level.xsb);
