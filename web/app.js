@@ -5,6 +5,7 @@ import { GameSession } from './session.js';
 import { isCompleted, latestLevel, canEnterLevel, adjacentLevel } from './progression.js';
 import { optimalMoves } from './optimal-moves.js';
 import { playVictory, stopVictory } from './victory.js';
+import { unlockSolution } from './solutions.js';
 
 const icons = {ArrowUp,ArrowDown,ArrowLeft,ArrowRight,ChevronLeft,ChevronRight,Undo2,Redo2,RotateCcw,Grid2x2,VolumeX,Volume2,Maximize,Minimize,Footprints,Box,CircleCheck,Check,LockKeyhole,X};
 const $ = id => document.getElementById(id);
@@ -27,6 +28,7 @@ try {
   currentVersion=saveVersion(saved);
 } catch { storageAvailable = false; }
 let session, currentSource, playerElement, page = 0, saveTimer, statusTimer;
+let demonstration, unlockAttempt=0;
 const crateElements=new Map();
 const soundEffects = {push:new Audio(assets.push),win:new Audio(assets.win)};
 const music=singleLevel?{game:new Audio(assets.gameMusic)}:{game:new Audio(assets.gameMusic),catalog:new Audio(assets.catalogMusic)};
@@ -53,6 +55,7 @@ function setCatalog(open) {
   open=open&&!singleLevel&&mobileLayout.matches;
   $('catalog').classList.toggle('open',open);
   $('catalog-toggle').setAttribute('aria-expanded',String(open));
+  if(open&&demonstration?.playing) pauseDemonstration();
   updateMusic();
 }
 function keepBest(id,candidate) {
@@ -142,9 +145,9 @@ function image(key) {
   return img;
 }
 function place(element,x,y) { element.style.setProperty('--x',x);element.style.setProperty('--y',y); }
-function renderBoard() {
-  const board=$('board'), width=session.level.board.width;
-  const walls=new Set(session.level.board.walls), goals=new Set(session.level.board.goals);
+function renderBoard(view=session) {
+  const board=$('board'), width=view.level.board.width;
+  const walls=new Set(view.level.board.walls), goals=new Set(view.level.board.goals);
   const fragment=document.createDocumentFragment();
   for(let y=0;y<currentSource.height;y++) for(let x=0;x<currentSource.width;x++) {
     const key=(y+1)*width+x+1;
@@ -185,29 +188,30 @@ function fitBoard() {
   board.style.width=`${cell*currentSource.width}px`;
   board.style.height=`${cell*currentSource.height}px`;
 }
-function renderState(moveResult) {
-  const width=session.level.board.width,board=$('board');
-  const goals=new Set(session.level.board.goals);
+function renderState(moveResult,view=session) {
+  const width=view.level.board.width,board=$('board');
+  const goals=new Set(view.level.board.goals);
   if(moveResult?.kind==='push'){
     const moved=crateElements.get(moveResult.boxFrom);
     if(moved){crateElements.delete(moveResult.boxFrom);crateElements.set(moveResult.boxTo,moved);}
   }
-  const boxes=new Set(session.level.state.boxes);
+  const boxes=new Set(view.level.state.boxes);
   for(const [key,element] of crateElements){if(!boxes.has(key)){element.remove();crateElements.delete(key);}}
-  for(const position of session.level.state.boxes) {
+  for(const position of boxes) {
     let box=crateElements.get(position);
     if(!box){box=document.createElement('div');box.className='piece crate';box.append(image(goals.has(position)?'boxGoal':'box'));board.append(box);crateElements.set(position,box);}
     place(box,position%width-1,Math.floor(position/width)-1);
     const nextImage=assets[goals.has(position)?'boxGoal':'box'];
     if(box.firstChild.getAttribute('src')!==nextImage)box.firstChild.src=nextImage;
   }
-  const position=session.level.state.player;
+  const position=view.level.state.player;
   place(playerElement,position%width-1,Math.floor(position/width)-1);
-  playerElement.firstChild.src=assets[`player${session.facing[0].toUpperCase()+session.facing.slice(1)}`];
-  $('moves').textContent=session.moves;
-  $('pushes').textContent=session.pushes;
-  $('goals').textContent=`${session.onGoals} / ${session.level.state.boxes.length}`;
-  $('board').setAttribute('aria-label',`第 ${session.id} 关，${session.moves} 步，${session.onGoals} 个箱子归位，共 ${session.level.state.boxes.length} 个`);
+  playerElement.firstChild.src=assets[`player${view.facing[0].toUpperCase()+view.facing.slice(1)}`];
+  $('moves').textContent=view.moves;
+  $('pushes').textContent=view.pushes;
+  $('goals').textContent=`${view.onGoals} / ${boxes.size}`;
+  $('board').setAttribute('aria-label',`第 ${view.id} 关，${view.moves} 步，${view.onGoals} 个箱子归位，共 ${boxes.size} 个`);
+  if(view!==session) return;
   $('undo').disabled=!session.history.length;
   $('redo').disabled=!session.future.length;
   document.querySelectorAll('[data-direction]').forEach(b=>b.disabled=session.solved);
@@ -220,6 +224,7 @@ function load(id,restore,saveSelection=true) {
     restore=undefined;
   }
   const source=levels.find(l=>l.id===id);
+  endDemonstration(false);
   currentSource=source;
   session=new GameSession(source);
   if(restore) {try {session.resume(restore);} catch {notify('存档已重置');}}
@@ -246,7 +251,7 @@ function recordWin(celebrate=false) {
   if(celebrate) playVictory();
 }
 function move(direction) {
-  if($('success').open||catalogOpen()) return;
+  if(demonstration||$('solution-lock').open||$('success').open||catalogOpen()) return;
   const result=session.move(direction);
   if(!result.ok) return;
   notify('');renderState(result.move);scheduleSave();
@@ -254,14 +259,139 @@ function move(direction) {
   else if(result.move.kind==='push') sound('push');
 }
 function undo() {
+  if(demonstration) return;
   if(session.undo()) {stopVictory();notify('');renderState();scheduleSave();}
 }
 function redo() {
+  if(demonstration) return;
   if(session.redo()) {renderState();scheduleSave();if(session.solved) recordWin();}
 }
+
+function showDemonstrationControls(active) {
+  const controls=$('solution-controls');
+  controls.hidden=!active;
+  controls.parentElement.classList.toggle('is-demonstrating',active);
+  document.querySelector('.tools').hidden=active;
+  document.querySelector('.dpad').hidden=active;
+  $('show-solution').disabled=active;
+}
+function refreshDemonstration() {
+  const {view,steps,playing}=demonstration;
+  const finished=view.moves===steps.length;
+  $('solution-progress').textContent=`${finished?'演示完成':'最优解演示'} · ${view.moves} / ${steps.length} 步`;
+  $('solution-play').textContent=playing?'暂停演示':finished?'重播':'继续演示';
+  $('solution-step').disabled=finished;
+}
+function queueDemonstrationStep() {
+  demonstration.timer=setTimeout(advanceDemonstration,Number($('solution-speed').value));
+}
+function pauseDemonstration() {
+  clearTimeout(demonstration.timer);
+  demonstration.playing=false;
+  refreshDemonstration();
+}
+function advanceDemonstration() {
+  const {view,steps}=demonstration;
+  if(view.moves>=steps.length) return;
+  const result=view.move(steps[view.moves]);
+  if(!result.ok) {
+    endDemonstration();
+    notify('本关解法数据有误');
+    return;
+  }
+  renderState(result.move,view);
+  if(view.moves===steps.length) demonstration.playing=false;
+  refreshDemonstration();
+  if(demonstration.playing) queueDemonstrationStep();
+}
+function endDemonstration(restoreBoard=true) {
+  if(!demonstration) return;
+  clearTimeout(demonstration.timer);
+  demonstration=undefined;
+  showDemonstrationControls(false);
+  if(restoreBoard) {
+    renderBoard();
+    renderState();
+    $('show-solution').focus();
+  }
+}
+
+$('show-solution').addEventListener('click',()=>{
+  unlockAttempt++;
+  $('solution-form').reset();
+  $('solution-error').textContent='';
+  $('solution-unlock').disabled=false;
+  $('solution-lock').showModal();
+});
+$('solution-cancel').addEventListener('click',()=>$('solution-lock').close());
+$('solution-form').addEventListener('submit',async event=>{
+  event.preventDefault();
+  const dialog=$('solution-lock'),input=$('solution-password'),error=$('solution-error'),button=$('solution-unlock');
+  if(button.disabled) return;
+  if(!window.crypto||!window.crypto.subtle) {
+    error.textContent='请通过 HTTPS 或本地文件打开课件。';
+    return;
+  }
+  const attempt=++unlockAttempt,source=currentSource;
+  button.disabled=true;
+  error.textContent='正在验证…';
+  const password=input.value;
+  input.value='';
+  let steps;
+  try {
+    steps=await unlockSolution(source.id,password);
+  } catch {
+    if(attempt===unlockAttempt&&dialog.open) {
+      error.textContent='密码不正确，请重试。';
+      input.focus();
+    }
+    return;
+  } finally {
+    if(attempt===unlockAttempt) button.disabled=false;
+  }
+  if(attempt!==unlockAttempt||!dialog.open||source!==currentSource) return;
+  if(steps.length!==optimalMoves[source.id]||steps.some(step=>!step)) {
+    error.textContent='本关解法数据有误。';
+    return;
+  }
+  dialog.close();
+  setCatalog(false);
+  stopVictory();
+  notify('');
+  demonstration={view:new GameSession(source),steps,playing:true};
+  showDemonstrationControls(true);
+  renderBoard(demonstration.view);
+  renderState(undefined,demonstration.view);
+  refreshDemonstration();
+  $('solution-play').focus();
+  queueDemonstrationStep();
+});
+$('solution-play').addEventListener('click',()=>{
+  if(demonstration.playing) {pauseDemonstration();return;}
+  const {view,steps}=demonstration;
+  if(view.moves===steps.length) {
+    view.restart();
+    renderBoard(view);
+    renderState(undefined,view);
+  }
+  demonstration.playing=true;
+  refreshDemonstration();
+  queueDemonstrationStep();
+});
+$('solution-step').addEventListener('click',()=>{
+  pauseDemonstration();
+  advanceDemonstration();
+});
+$('solution-speed').addEventListener('change',()=>{
+  if(!demonstration.playing) return;
+  clearTimeout(demonstration.timer);
+  queueDemonstrationStep();
+});
+$('solution-exit').addEventListener('click',()=>endDemonstration());
+
 $('undo').addEventListener('click',undo);
 $('redo').addEventListener('click',redo);
-$('restart').addEventListener('click',()=>{stopVictory();session.restart();notify('');renderState();scheduleSave();});
+$('restart').addEventListener('click',()=>{if(demonstration)return;stopVictory();session.restart();notify('');renderState();scheduleSave();});
 $('previous').addEventListener('click',()=>load(adjacentLevel(records,levels,session.id,-1)));
 $('next').addEventListener('click',()=>load(adjacentLevel(records,levels,session.id,1)));
 $('success').addEventListener('close',()=>{if(!$('success').open) stopVictory();});
@@ -287,8 +417,9 @@ document.querySelectorAll('[data-direction]').forEach(button=>button.addEventLis
 const keyDirections={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right'};
 document.addEventListener('keydown',event=>{
   if(event.ctrlKey||event.metaKey||event.altKey||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;
-  if($('success').open)return;
+  if($('success').open||$('solution-lock').open)return;
   if(catalogOpen()){if(event.key==='Escape')setCatalog(false);return;}
+  if(demonstration){if(event.key==='Escape')endDemonstration();return;}
   const key=event.key.length===1?event.key.toLowerCase():event.key;
   if(keyDirections[key]){event.preventDefault();move(keyDirections[key]);}
   else if(key==='z'){event.preventDefault();undo();}
@@ -297,7 +428,7 @@ document.addEventListener('keydown',event=>{
 });
 let touchStart;
 $('board-stage').addEventListener('pointerdown',event=>{
-  if(event.pointerType==='mouse'||session.solved)return;
+  if(event.pointerType==='mouse'||demonstration||session.solved)return;
   touchStart={x:event.clientX,y:event.clientY,id:event.pointerId};
   if(event.isTrusted)$('board-stage').setPointerCapture(event.pointerId);
 });
@@ -309,7 +440,13 @@ $('board-stage').addEventListener('pointerup',event=>{
 });
 $('board-stage').addEventListener('pointercancel',()=>touchStart=null);
 window.addEventListener('pagehide',persist);
-document.addEventListener('visibilitychange',()=>{if(document.hidden)persist();updateMusic();});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden) {
+    if(demonstration) pauseDemonstration();
+    persist();
+  }
+  updateMusic();
+});
 window.addEventListener('storage',event=>{
   if(event.key!==storageKey||event.storageArea!==localStorage) return;
   const saved=parseSave(event.newValue);

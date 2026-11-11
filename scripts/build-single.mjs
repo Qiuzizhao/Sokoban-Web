@@ -3,6 +3,7 @@ import path from 'node:path';
 import { build } from 'esbuild';
 import { assets } from '../web/assets.js';
 import { levels } from '../web/levels.js';
+import { solutionData } from '../web/solution-data.js';
 
 const classroom=process.argv.includes('--classroom');
 const firstLevel=process.argv.includes('--first-level');
@@ -23,6 +24,7 @@ const result=await build({
   plugins:[{name:'embedded-assets',setup(builder){
     builder.onLoad({filter:/[\\/]web[\\/]assets\.js$/},()=>({contents:`export const assets = ${JSON.stringify(embedded)};`,loader:'js'}));
     if(firstLevel)builder.onLoad({filter:/[\\/]web[\\/]levels\.js$/},()=>({contents:`export const levels = ${JSON.stringify(levels.slice(0,1))};`,loader:'js'}));
+    if(firstLevel)builder.onLoad({filter:/[\\/]web[\\/]solution-data\.js$/},()=>({contents:`export const solutionData = ${JSON.stringify({...solutionData,paths:{1:solutionData.paths[1]}})};`,loader:'js'}));
   }}],
 });
 const script=result.outputFiles[0].text.replace(/<\/script/gi,'<\\/script');

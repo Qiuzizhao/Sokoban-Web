@@ -11,6 +11,7 @@
   <header class="header">
     <a class="brand" href="#" aria-label="推箱子"><img src="assets/box.png" alt=""><span>推箱子<span class="brand-dot">.</span></span></a>
     <div class="header-actions">
+      <button class="solution-trigger" id="show-solution">解法演示</button>
       <button class="icon-button mobile-catalog" id="catalog-toggle" title="选择关卡" aria-label="选择关卡"><i data-lucide="grid-2x2"></i></button>
       <button class="icon-button" id="sound" title="开启音效" aria-label="开启音效" aria-pressed="false"><i data-lucide="volume-x"></i></button>
       <button class="icon-button" id="fullscreen" title="全屏" aria-label="全屏"><i data-lucide="maximize"></i></button>
@@ -32,11 +33,31 @@
       <div class="bottom-controls">
         <div class="tools"><button class="icon-button" id="undo" title="撤回" aria-label="撤回"><i data-lucide="undo-2"></i></button><button class="icon-button" id="redo" title="重做" aria-label="重做"><i data-lucide="redo-2"></i></button><button class="icon-button" id="restart" title="重新开始" aria-label="重新开始"><i data-lucide="rotate-ccw"></i></button></div>
         <div class="dpad" aria-label="方向控制"><button class="icon-button" data-direction="up" title="向上" aria-label="向上"><i data-lucide="arrow-up"></i></button><button class="icon-button" data-direction="left" title="向左" aria-label="向左"><i data-lucide="arrow-left"></i></button><button class="icon-button" data-direction="down" title="向下" aria-label="向下"><i data-lucide="arrow-down"></i></button><button class="icon-button" data-direction="right" title="向右" aria-label="向右"><i data-lucide="arrow-right"></i></button></div>
+        <div class="solution-controls" id="solution-controls" role="group" aria-label="最优解播放控制" hidden>
+          <p id="solution-progress"></p>
+          <button id="solution-play" class="primary-button">暂停演示</button>
+          <button id="solution-step" class="secondary-button">下一步</button>
+          <label for="solution-speed">速度</label>
+          <select id="solution-speed"><option value="600">0.5×</option><option value="300" selected>1×</option><option value="150">2×</option></select>
+          <button id="solution-exit" class="secondary-button">返回棋局</button>
+        </div>
       </div>
       <p id="status" class="status" role="status" aria-live="polite"></p>
     </section>
   </main>
   <dialog id="success"><div class="success-content"><div class="success-mark"><i data-lucide="check"></i></div><span class="eyebrow">LEVEL COMPLETE</span><h2>全部归位！</h2><p id="success-stats"></p><div class="success-actions"><button class="secondary-button" id="success-close">返回棋盘</button><button class="primary-button" id="success-next">下一关 <i data-lucide="arrow-right"></i></button></div></div></dialog>
+  <dialog id="solution-lock" aria-labelledby="solution-title">
+    <form id="solution-form" class="solution-form">
+      <h2 id="solution-title">最优解演示</h2>
+      <label for="solution-password">演示密码</label>
+      <input id="solution-password" type="password" autocomplete="off" maxlength="128" required autofocus>
+      <p id="solution-error" role="status"></p>
+      <div class="solution-actions">
+        <button id="solution-cancel" class="secondary-button" type="button">取消</button>
+        <button id="solution-unlock" class="primary-button" type="submit">解锁并播放</button>
+      </div>
+    </form>
+  </dialog>
   <script src="game.js"></script>
 </body>
 </html>
