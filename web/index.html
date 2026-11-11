@@ -31,7 +31,7 @@
       <div class="stats"><div><i data-lucide="footprints"></i><span>步数</span><strong id="moves">0</strong></div><div><i data-lucide="box"></i><span>推动</span><strong id="pushes">0</strong></div><div class="goal-stat"><i data-lucide="circle-check"></i><span>归位</span><strong id="goals">0 / 2</strong></div></div>
       <div class="board-stage" id="board-stage"><div id="board" class="board" tabindex="0" role="application" aria-label="推箱子棋盘"></div></div>
       <div class="bottom-controls">
-        <div class="tools"><button class="icon-button" id="undo" title="撤回" aria-label="撤回"><i data-lucide="undo-2"></i></button><button class="icon-button" id="redo" title="重做" aria-label="重做"><i data-lucide="redo-2"></i></button><button class="icon-button" id="restart" title="重新开始" aria-label="重新开始"><i data-lucide="rotate-ccw"></i></button></div>
+        <div class="tools"><button class="icon-button" id="undo" title="撤回" aria-label="撤回"><i data-lucide="undo-2"></i></button><button class="icon-button" id="redo" title="重做" aria-label="重做"><i data-lucide="redo-2"></i></button><button class="icon-button" id="restart" title="重新开始" aria-label="重新开始"><i data-lucide="rotate-ccw"></i></button><button class="icon-button" id="hint-toggle" title="A* 辅助" aria-label="A* 辅助" aria-pressed="false">A*</button></div>
         <div class="dpad" aria-label="方向控制"><button class="icon-button" data-direction="up" title="向上" aria-label="向上"><i data-lucide="arrow-up"></i></button><button class="icon-button" data-direction="left" title="向左" aria-label="向左"><i data-lucide="arrow-left"></i></button><button class="icon-button" data-direction="down" title="向下" aria-label="向下"><i data-lucide="arrow-down"></i></button><button class="icon-button" data-direction="right" title="向右" aria-label="向右"><i data-lucide="arrow-right"></i></button></div>
         <div class="solution-controls" id="solution-controls" role="group" aria-label="最优解播放控制" hidden>
           <p id="solution-progress"></p>
@@ -49,7 +49,7 @@
   <dialog id="solution-lock" aria-labelledby="solution-title">
     <form id="solution-form" class="solution-form">
       <h2 id="solution-title">最优解演示</h2>
-      <label for="solution-password">演示密码</label>
+      <label for="solution-password" id="solution-password-label">演示密码</label>
       <input id="solution-password" type="password" autocomplete="off" maxlength="128" required autofocus>
       <p id="solution-error" role="status"></p>
       <div class="solution-actions">

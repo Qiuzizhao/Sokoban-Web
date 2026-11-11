@@ -44,7 +44,7 @@ try {
   assert.equal(await page.locator('.player').getAttribute('style'),initial);
   await page.locator('#redo').click();
   assert.equal(await page.locator('#moves').textContent(),'1');
-  assert.deepEqual(await page.locator('.tools button').evaluateAll(buttons=>buttons.map(button=>button.id)),['undo','redo','restart']);
+  assert.deepEqual(await page.locator('.tools button').evaluateAll(buttons=>buttons.map(button=>button.id)),['undo','redo','restart','hint-toggle']);
   await page.keyboard.press('Escape');
   await page.keyboard.press('ArrowLeft');
   assert.equal(await page.locator('#moves').textContent(),'2');

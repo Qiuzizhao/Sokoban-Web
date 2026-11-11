@@ -17,7 +17,6 @@
   .dpad svg{width:28px;height:28px;stroke-width:2.2}
   .tools{order:1;display:grid;grid-template-columns:repeat(2,44px);gap:8px}
   .tools .icon-button{width:44px;height:44px}
-  .tools #restart{grid-column:1/-1;justify-self:center}
   .status:empty{display:none}
 }
 @media(max-width:680px) and (max-height:740px){
@@ -54,6 +53,23 @@
   border-radius:8px;background:#fff;color:#253a32;font:inherit
 }
 #solution-error{min-height:20px;margin:0;color:#974739;font-size:13px}
+#hint-toggle{font-weight:700;color:#215c43}
+#hint-toggle[aria-pressed="true"]{background:#215c43;color:#fff;border-color:#215c43}
+.status.is-hint{color:#215c43;font-weight:600}
+.hint-marker{
+  position:absolute;top:0;left:0;width:var(--cell);height:var(--cell);z-index:6;
+  display:grid;place-items:center;pointer-events:none;
+  transform:translate(calc(var(--x)*var(--cell)),calc(var(--y)*var(--cell)))
+}
+.hint-marker span{transform:rotate(var(--hint-angle))}
+.hint-marker b{
+  display:grid;place-items:center;width:calc(var(--cell)*.68);height:calc(var(--cell)*.68);
+  border:2px solid #fff;border-radius:50%;background:#1b6244;color:#fff;
+  font-size:calc(var(--cell)*.5);line-height:1;box-shadow:0 2px 8px #163e3859;
+  animation:hint-slide .85s ease-in-out infinite alternate
+}
+.dpad button.is-hint{background:#c8e8d4;border-color:#227b59;box-shadow:0 0 0 2px #227b59}
+@keyframes hint-slide{from{transform:translateX(-10%)}to{transform:translateX(16%)}}
 .solution-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .bottom-controls.is-demonstrating{grid-template-columns:minmax(0,1fr);justify-items:center}
 .solution-controls{
@@ -108,7 +124,7 @@ html.no-flexgap body:not(.single-level) .game-heading > .optimal-moves{margin-ri
     grid-area:controls;display:grid;grid-template-columns:1fr auto;
     align-items:center;gap:12px;padding:0;user-select:none
   }
-  .tools{display:grid;grid-template-columns:repeat(3,46px);gap:6px}
+  .tools{display:grid;grid-template-columns:repeat(4,46px);gap:6px}
   .tools .icon-button{width:46px;height:46px}
   .dpad{
     --direction-size:60px;
@@ -148,7 +164,7 @@ html.no-flexgap body:not(.single-level) .game-heading > .optimal-moves{margin-ri
   .layout{grid-template-columns:246px minmax(0,1fr);gap:24px}
   .catalog{padding-right:18px}
   .level-grid .level-cell{height:44px}
-  .tools{grid-template-columns:repeat(3,52px);gap:8px}
+  .tools{grid-template-columns:repeat(4,52px);gap:8px}
   .tools .icon-button{width:52px;height:52px}
   .dpad{--direction-size:84px}
   .dpad svg{width:38px;height:38px}
@@ -157,7 +173,7 @@ html.no-flexgap body:not(.single-level) .game-heading > .optimal-moves{margin-ri
 @media(min-width:1600px) and (min-height:820px){
   .layout{grid-template-columns:270px minmax(0,1fr)}
   .level-grid .level-cell{height:46px}
-  .tools{grid-template-columns:repeat(3,56px)}
+  .tools{grid-template-columns:repeat(4,56px)}
   .tools .icon-button{width:56px;height:56px}
   .dpad{--direction-size:96px}
   .dpad svg{width:44px;height:44px}

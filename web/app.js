@@ -6,6 +6,7 @@ import { isCompleted, latestLevel, canEnterLevel, adjacentLevel } from './progre
 import { optimalMoves } from './optimal-moves.js';
 import { playVictory, stopVictory } from './victory.js';
 import { unlockSolution } from './solutions.js';
+import { cancelHint, closeHints, requestHint } from './hints.js';
 
 const icons = {ArrowUp,ArrowDown,ArrowLeft,ArrowRight,ChevronLeft,ChevronRight,Undo2,Redo2,RotateCcw,Grid2x2,VolumeX,Volume2,Maximize,Minimize,Footprints,Box,CircleCheck,Check,LockKeyhole,X};
 const $ = id => document.getElementById(id);
@@ -28,7 +29,8 @@ try {
   currentVersion=saveVersion(saved);
 } catch { storageAvailable = false; }
 let session, currentSource, playerElement, page = 0, saveTimer, statusTimer;
-let demonstration, unlockAttempt=0;
+let demonstration, unlockAttempt=0, unlockMode;
+let hintsEnabled=false, hintMarker, hintButton;
 const crateElements=new Map();
 const soundEffects = {push:new Audio(assets.push),win:new Audio(assets.win)};
 const music=singleLevel?{game:new Audio(assets.gameMusic)}:{game:new Audio(assets.gameMusic),catalog:new Audio(assets.catalogMusic)};
@@ -97,10 +99,11 @@ function scheduleSave() {
   clearTimeout(saveTimer);
   saveTimer=setTimeout(persist,180);
 }
-function notify(message) {
+function notify(message,timeout=2600) {
   clearTimeout(statusTimer);
+  $('status').classList.remove('is-hint');
   $('status').textContent = message;
-  if (message) statusTimer = setTimeout(()=>$('status').textContent='',2600);
+  if(message&&timeout) statusTimer=setTimeout(()=>$('status').textContent='',timeout);
 }
 function refreshIcons() { createIcons({icons}); }
 function replaceIcon(button, name, label) {
@@ -145,6 +148,52 @@ function image(key) {
   return img;
 }
 function place(element,x,y) { element.style.setProperty('--x',x);element.style.setProperty('--y',y); }
+const hintDirections={
+  up:{label:'向上',dx:0,dy:-1,angle:-90},right:{label:'向右',dx:1,dy:0,angle:0},
+  down:{label:'向下',dx:0,dy:1,angle:90},left:{label:'向左',dx:-1,dy:0,angle:180},
+};
+function hintStatus(message) {
+  const status=$('status');
+  if(!message&&!status.classList.contains('is-hint')) return;
+  notify(message,0);
+  status.classList.toggle('is-hint',Boolean(message));
+}
+function showHint(result) {
+  if(result.status==='searching') {hintStatus('A* 正在计算…');return;}
+  if(result.status==='unsolvable') {hintStatus('当前棋局无解，可以撤回或重开');return;}
+  if(result.status==='limit') {hintStatus('已达到搜索上限，可撤回或换一步再试');return;}
+  if(result.status!=='solved') {hintStatus('暂时无法计算 A* 提示');return;}
+
+  const {label,dx,dy,angle}=hintDirections[result.direction];
+  const {board,state}=session.level;
+  hintMarker=document.createElement('span');
+  hintMarker.className='hint-marker';
+  hintMarker.setAttribute('aria-hidden','true');
+  hintMarker.innerHTML='<span><b>➜</b></span>';
+  hintMarker.style.setProperty('--hint-angle',`${angle}deg`);
+  place(hintMarker,state.player%board.width-1+dx,Math.floor(state.player/board.width)-1+dy);
+  $('board').append(hintMarker);
+  hintButton=document.querySelector(`[data-direction="${result.direction}"]`);
+  hintButton.classList.add('is-hint');
+  hintStatus(`A* 建议${label} · 最少还需 ${result.remaining} 步`);
+}
+function refreshHint() {
+  if(hintMarker) hintMarker.remove();
+  if(hintButton) hintButton.classList.remove('is-hint');
+  hintMarker=hintButton=undefined;
+  if(!hintsEnabled||demonstration||session.solved||document.hidden) {
+    cancelHint();
+    hintStatus('');
+    return;
+  }
+  requestHint(session.id,session.level,showHint);
+}
+function setHintsEnabled(enabled) {
+  hintsEnabled=enabled;
+  $('hint-toggle').setAttribute('aria-pressed',String(enabled));
+  if(!enabled) closeHints();
+  refreshHint();
+}
 function renderBoard(view=session) {
   const board=$('board'), width=view.level.board.width;
   const walls=new Set(view.level.board.walls), goals=new Set(view.level.board.goals);
@@ -216,6 +265,7 @@ function renderState(moveResult,view=session) {
   $('redo').disabled=!session.future.length;
   document.querySelectorAll('[data-direction]').forEach(b=>b.disabled=session.solved);
   updateMusic();
+  refreshHint();
 }
 function load(id,restore,saveSelection=true) {
   if(!canEnterLevel(records,levels,id)){
@@ -316,12 +366,21 @@ function endDemonstration(restoreBoard=true) {
   }
 }
 
-$('show-solution').addEventListener('click',()=>{
+function askForPassword(mode) {
+  unlockMode=mode;
   unlockAttempt++;
   $('solution-form').reset();
   $('solution-error').textContent='';
   $('solution-unlock').disabled=false;
+  $('solution-title').textContent=mode==='hint'?'A* 辅助':'最优解演示';
+  $('solution-password-label').textContent=mode==='hint'?'辅助密码':'演示密码';
+  $('solution-unlock').textContent=mode==='hint'?'解锁并开启':'解锁并播放';
   $('solution-lock').showModal();
+}
+$('show-solution').addEventListener('click',()=>askForPassword('demo'));
+$('hint-toggle').addEventListener('click',()=>{
+  if(hintsEnabled) setHintsEnabled(false);
+  else askForPassword('hint');
 });
 $('solution-cancel').addEventListener('click',()=>$('solution-lock').close());
 $('solution-form').addEventListener('submit',async event=>{
@@ -332,7 +391,7 @@ $('solution-form').addEventListener('submit',async event=>{
     error.textContent='请通过 HTTPS 或本地文件打开课件。';
     return;
   }
-  const attempt=++unlockAttempt,source=currentSource;
+  const attempt=++unlockAttempt,source=currentSource,mode=unlockMode;
   button.disabled=true;
   error.textContent='正在验证…';
   const password=input.value;
@@ -356,9 +415,15 @@ $('solution-form').addEventListener('submit',async event=>{
   }
   dialog.close();
   setCatalog(false);
+  if(mode==='hint') {
+    setHintsEnabled(true);
+    $('hint-toggle').focus();
+    return;
+  }
   stopVictory();
   notify('');
   demonstration={view:new GameSession(source),steps,playing:true};
+  refreshHint();
   showDemonstrationControls(true);
   renderBoard(demonstration.view);
   renderState(undefined,demonstration.view);
@@ -446,6 +511,7 @@ document.addEventListener('visibilitychange',()=>{
     persist();
   }
   updateMusic();
+  refreshHint();
 });
 window.addEventListener('storage',event=>{
   if(event.key!==storageKey||event.storageArea!==localStorage) return;

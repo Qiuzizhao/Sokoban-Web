@@ -4,6 +4,7 @@ import { build } from 'esbuild';
 import { assets } from '../web/assets.js';
 import { levels } from '../web/levels.js';
 import { solutionData } from '../web/solution-data.js';
+import { hintWorkerSource } from './hint-worker-source.mjs';
 
 const classroom=process.argv.includes('--classroom');
 const firstLevel=process.argv.includes('--first-level');
@@ -21,6 +22,7 @@ const embedded=Object.fromEntries(Object.entries(assets).filter(([name])=>!first
 }));
 const result=await build({
   entryPoints:['web/app.js'],bundle:true,write:false,format:'iife',minify:true,target:(classroom||firstLevel)?['chrome79']:['es2020'],legalComments:'eof',
+  define:{__HINT_WORKER_SOURCE__:await hintWorkerSource()},
   plugins:[{name:'embedded-assets',setup(builder){
     builder.onLoad({filter:/[\\/]web[\\/]assets\.js$/},()=>({contents:`export const assets = ${JSON.stringify(embedded)};`,loader:'js'}));
     if(firstLevel)builder.onLoad({filter:/[\\/]web[\\/]levels\.js$/},()=>({contents:`export const levels = ${JSON.stringify(levels.slice(0,1))};`,loader:'js'}));

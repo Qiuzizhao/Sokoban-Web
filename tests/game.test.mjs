@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { parseLevel, solveSokoban, replayMoves, isSolved } from 'miaoda-game-sokoban-core';
 import { GameSession } from '../web/session.js';
+import { shortestSolution } from '../web/shortest-solution.js';
 const levels=JSON.parse(fs.readFileSync('extracted/levels.json','utf8'));
 const small={id:1,xsb:'#######\n# @$. #\n#######'};
 
@@ -42,6 +43,21 @@ test('save/resume preserves current state, undo and redo; corrupted saves are re
   const copy=new GameSession(small);copy.resume(JSON.parse(JSON.stringify(game.serialize())));
   assert.deepEqual(copy.snapshot(),game.snapshot());assert.equal(copy.redo(),true);
   assert.throws(()=>copy.resume({...game.serialize(),state:{player:0,boxes:[]}}));
+});
+test('A* solves the current position after a detour and distinguishes deadlocks from search limits',()=>{
+  const game=new GameSession(levels[0]);
+  assert.equal(shortestSolution(game.level).moves,13);
+  assert.equal(game.move('down').ok,true);
+  const result=shortestSolution(game.level);
+  assert.equal(result.status,'solved');
+  assert.equal(result.moves,14);
+  assert.equal(result.path[0],'up');
+  const replay=replayMoves(game.level,result.path);
+  assert.ok(replay.ok&&isSolved(replay.level));
+  assert.equal(shortestSolution(game.level,{maxExpanded:0}).status,'limit');
+  game.restart();
+  for(const direction of ['right','down','right']) assert.equal(game.move(direction).ok,true);
+  assert.equal(shortestSolution(game.level).status,'unsolvable');
 });
 test('all 50 original levels solve and replay through the new engine',()=>{
   for(const {id} of levels){
