@@ -9,5 +9,5 @@ for(const name of ['miaoda-game-sokoban-core','miaoda-game-grid-core','miaoda-ga
     if(/^licen[sc]e/i.test(file))fs.copyFileSync(path.join('node_modules',name,file),path.join('web/licenses',`${name}-${file}`));
   }
 }
-await build({entryPoints:['web/app.js'], bundle:true, outfile:'web/game.js', format:'iife', minify:true, target:['es2020'], legalComments:'eof', define:{__HINT_WORKER_SOURCE__:await hintWorkerSource()}});
+await build({entryPoints:['web/app.js'], bundle:true, outfile:'web/game.js', format:'iife', minify:true, target:['es2020'], legalComments:'eof', define:{__HINT_WORKER_SOURCE__:await hintWorkerSource(),__CAMPUS__: 'false'}});
 console.log('Built web/game.js. Open web/index.html directly.');

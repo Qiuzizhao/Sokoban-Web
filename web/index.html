@@ -11,6 +11,7 @@
   <header class="header">
     <a class="brand" href="#" aria-label="推箱子"><img src="assets/box.png" alt=""><span>推箱子<span class="brand-dot">.</span></span></a>
     <div class="header-actions">
+      <button class="solution-trigger" id="profile-toggle" hidden>切换身份</button>
       <button class="solution-trigger" id="show-solution">解法演示</button>
       <button class="solution-trigger" id="hint-toggle" title="A* 辅助" aria-label="A* 辅助" aria-pressed="false">A*<span class="hint-caption"> 辅助</span></button>
       <button class="icon-button mobile-catalog" id="catalog-toggle" title="选择关卡" aria-label="选择关卡"><i data-lucide="grid-2x2"></i></button>
@@ -46,6 +47,20 @@
       <p id="status" class="status" role="status" aria-live="polite"></p>
     </section>
   </main>
+  <dialog id="profile-dialog" aria-labelledby="profile-title">
+    <div class="profile-panel">
+      <h2 id="profile-title">选择游玩身份</h2>
+      <div class="profile-actions" id="profile-modes">
+        <button id="play-guest" class="secondary-button">游客</button>
+        <button id="play-campus" class="primary-button">校园</button>
+      </div>
+      <label for="profile-class" id="profile-class-label" hidden>选择班级</label>
+      <select id="profile-class" hidden></select>
+      <div id="profile-students" class="profile-students" role="group" aria-label="选择姓名" hidden></div>
+      <p id="profile-message" role="status"></p>
+      <button id="profile-back" class="secondary-button" hidden>返回游戏</button>
+    </div>
+  </dialog>
   <dialog id="success"><div class="success-content"><div class="success-mark"><i data-lucide="check"></i></div><span class="eyebrow">LEVEL COMPLETE</span><h2>全部归位！</h2><p id="success-stats"></p><div class="success-actions"><button class="secondary-button" id="success-close">返回棋盘</button><button class="primary-button" id="success-next">下一关 <i data-lucide="arrow-right"></i></button></div></div></dialog>
   <dialog id="solution-lock" aria-labelledby="solution-title">
     <form id="solution-form" class="solution-form">

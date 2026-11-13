@@ -7,6 +7,7 @@ import { optimalMoves } from './optimal-moves.js';
 import { playVictory, stopVictory } from './victory.js';
 import { unlockSolution } from './solutions.js';
 import { cancelHint, closeHints, requestHint } from './hints.js';
+import { saveCampusWin, setupProfiles } from './campus.js';
 
 const icons = {ArrowUp,ArrowDown,ArrowLeft,ArrowRight,ChevronLeft,ChevronRight,Undo2,Redo2,RotateCcw,Grid2x2,VolumeX,Volume2,Maximize,Minimize,Footprints,Box,CircleCheck,Check,LockKeyhole,X};
 const $ = id => document.getElementById(id);
@@ -15,19 +16,27 @@ const storageKey = singleLevel?'sokoban-first-level-v1':'sokoban-web-v1';
 const mobileLayout=window.matchMedia('(max-width:680px)');
 let records = {}, muted = true, savedGame, storageAvailable = true;
 let currentVersion=0, pendingCurrentVersion=0, soundDirty=false;
+let campusMode=false;
 function parseSave(raw) {
   try {return JSON.parse(raw)||{};} catch {return {};}
 }
 function saveVersion(saved) {
   return Number.isSafeInteger(saved.currentVersion)&&saved.currentVersion>0?saved.currentVersion:0;
 }
-try {
-  const saved = parseSave(localStorage.getItem(storageKey));
-  if (saved.records && typeof saved.records === 'object' && !Array.isArray(saved.records)) records = saved.records;
-  muted = saved.muted !== false;
-  savedGame = saved.current;
-  currentVersion=saveVersion(saved);
-} catch { storageAvailable = false; }
+function readGuestSave() {
+  records={};
+  muted=true;
+  savedGame=undefined;
+  currentVersion=0;
+  try {
+    const saved = parseSave(localStorage.getItem(storageKey));
+    if (saved.records && typeof saved.records === 'object' && !Array.isArray(saved.records)) records = saved.records;
+    muted = saved.muted !== false;
+    savedGame = saved.current;
+    currentVersion=saveVersion(saved);
+  } catch { storageAvailable = false; }
+}
+readGuestSave();
 let session, currentSource, playerElement, page = 0, saveTimer, statusTimer;
 let demonstration, unlockAttempt=0, unlockMode;
 let hintsEnabled=false, hintMarker, hintButton;
@@ -76,6 +85,7 @@ function mergeRecords(saved) {
 }
 function persist() {
   clearTimeout(saveTimer);
+  if(campusMode) return;
   if(!pendingCurrentVersion&&!soundDirty) return;
   try {
     const saved=parseSave(localStorage.getItem(storageKey));
@@ -95,6 +105,7 @@ function persist() {
   catch { storageAvailable = false; }
 }
 function scheduleSave() {
+  if(campusMode) return;
   pendingCurrentVersion=Math.max(Date.now(),currentVersion+1,pendingCurrentVersion+1);
   clearTimeout(saveTimer);
   saveTimer=setTimeout(persist,180);
@@ -289,6 +300,7 @@ function load(id,restore,saveSelection=true) {
 }
 function recordWin(celebrate=false) {
   keepBest(session.id,{moves:session.moves,pushes:session.pushes});
+  if(campusMode) saveCampusWin(session.id,session.moves);
   persist();renderCatalog();sound('win');
   if(singleLevel) {
     if(celebrate) notify('全部归位！');
@@ -301,7 +313,7 @@ function recordWin(celebrate=false) {
   if(celebrate) playVictory();
 }
 function move(direction) {
-  if(demonstration||$('solution-lock').open||$('success').open||catalogOpen()) return;
+  if(demonstration||$('profile-dialog').open||$('solution-lock').open||$('success').open||catalogOpen()) return;
   const result=session.move(direction);
   if(!result.ok) return;
   notify('');renderState(result.move);scheduleSave();
@@ -483,7 +495,7 @@ document.querySelectorAll('[data-direction]').forEach(button=>button.addEventLis
 const keyDirections={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right'};
 document.addEventListener('keydown',event=>{
   if(event.ctrlKey||event.metaKey||event.altKey||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;
-  if($('success').open||$('solution-lock').open)return;
+  if($('profile-dialog').open||$('success').open||$('solution-lock').open)return;
   if(catalogOpen()){if(event.key==='Escape')setCatalog(false);return;}
   if(demonstration){if(event.key==='Escape')endDemonstration();return;}
   const key=event.key.length===1?event.key.toLowerCase():event.key;
@@ -515,7 +527,7 @@ document.addEventListener('visibilitychange',()=>{
   refreshHint();
 });
 window.addEventListener('storage',event=>{
-  if(event.key!==storageKey||event.storageArea!==localStorage) return;
+  if(campusMode||event.key!==storageKey||event.storageArea!==localStorage) return;
   const saved=parseSave(event.newValue);
   currentVersion=Math.max(currentVersion,saveVersion(saved));
   mergeRecords(saved.records);
@@ -530,3 +542,30 @@ $('sound').setAttribute('aria-pressed',String(!muted));
 load(Number.isInteger(savedGame?.id)?savedGame.id:1,savedGame,false);
 if(!storageAvailable)notify('当前浏览器无法保存进度');
 refreshIcons();
+
+function switchProfile(studentRecords) {
+  persist();
+  pendingCurrentVersion=0;
+  soundDirty=false;
+  setHintsEnabled(false);
+  campusMode=Boolean(studentRecords);
+  if(campusMode) {
+    records=studentRecords;
+    savedGame=undefined;
+  } else {
+    readGuestSave();
+  }
+  notify('');
+  replaceIcon($('sound'),muted?'volume-x':'volume-2',muted?'开启音效':'关闭音效');
+  $('sound').setAttribute('aria-pressed',String(!muted));
+  const id=savedGame?.id||(campusMode?latestLevel(records,levels):1)||levels[0].id;
+  load(id,savedGame,false);
+}
+setupProfiles({
+  onGuest:()=>switchProfile(null),
+  onCampus:switchProfile,
+  onBest:(level,moves)=>{
+    if(keepBest(level,{moves})) renderCatalog();
+  },
+  onError:message=>notify(message,0),
+});

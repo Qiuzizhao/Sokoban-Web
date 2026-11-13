@@ -55,6 +55,16 @@
 }
 #solution-error{min-height:20px;margin:0;color:#974739;font-size:13px}
 #hint-toggle[aria-pressed="true"]{background:#215c43;color:#fff;border-color:#215c43}
+.profile-panel{display:grid;gap:12px;padding:22px}
+.profile-panel h2{font-size:22px;margin:0}
+.profile-panel label{font-size:14px;font-weight:600}
+.profile-panel select{font:inherit;min-height:44px;padding:6px 10px;border:1px solid #adc4ac;border-radius:8px;background:#fff;color:#253a32}
+.profile-actions,.profile-students{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.profile-students{max-height:42vh;overflow:auto;padding:3px}
+.profile-students button{padding:8px;overflow-wrap:anywhere}
+#profile-message{font-size:14px;margin:0;color:#37574a}
+#profile-message:empty{display:none}
+#profile-toggle{max-width:118px;overflow:hidden;text-overflow:ellipsis}
 .status.is-hint{color:#215c43;font-weight:600}
 .hint-marker{
   position:absolute;top:0;left:0;width:var(--cell);height:var(--cell);z-index:6;
@@ -89,6 +99,11 @@
   #solution-exit{grid-column:1/-1}
 }
 @media(max-width:360px){.header{padding:0 12px}}
+@media(max-width:460px){
+  .has-profiles .header{height:auto;min-height:60px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+  .has-profiles .header-actions{display:grid;grid-auto-flow:column;align-items:center;gap:5px}
+  html.no-flexgap .has-profiles .header-actions > *{margin-right:0!important}
+}
 .victory-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:30;pointer-events:none}
 .win-celebrating #success::backdrop{background:#17382c30;backdrop-filter:none}
 .win-celebrating .success-mark{animation:victory-pop .42s ease-out both}
