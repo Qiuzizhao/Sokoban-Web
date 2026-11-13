@@ -91,6 +91,7 @@
 .profile-choice strong{font-size:16px}
 .profile-choice small{font-size:13px;color:#53685c}
 .profile-choice svg{display:block;width:16px;height:16px;color:#557262}
+.profile-choice > span:last-child{grid-column:3}
 .profile-students button:hover:not(:disabled){background:#dceee0;border-color:#94bc9f}
 .profile-link{
   min-height:44px;padding:3px 5px;border:0;border-radius:6px;background:transparent;

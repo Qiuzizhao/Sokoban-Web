@@ -121,7 +121,7 @@ export function setupProfiles({onGuest,onCampus,onBest,onError}) {
   $('profile-back').addEventListener('click',()=>dialog.close());
   modesBack.addEventListener('click',()=>{
     showModes();
-    $('play-campus').focus();
+    $('play-login').focus();
   });
   $('play-guest').addEventListener('click',()=>enter(null));
   dialog.addEventListener('cancel',event=>{if(!entered) event.preventDefault();});
@@ -134,10 +134,10 @@ export function setupProfiles({onGuest,onCampus,onBest,onError}) {
     }
     message.textContent=matches?'':'没有找到这个名字。';
   });
-  $('play-campus').addEventListener('click',async()=>{
+  $('play-login').addEventListener('click',async()=>{
     const attempt=++generation;
     classField.hidden=rosterField.hidden=true;
-    if(!linkKey) {message.textContent='请使用老师发放的校园链接。';return;}
+    if(!linkKey) {message.textContent='登录暂未开放，可以先以游客身份游玩。';return;}
     message.textContent='正在读取班级…';
     try {
       const {classes}=await request('classes',linkKey);
@@ -145,11 +145,13 @@ export function setupProfiles({onGuest,onCampus,onBest,onError}) {
       classSelect.replaceChildren(new Option('请选择班级',''),...classes.map(item=>new Option(item.name,item.id)));
       modes.hidden=$('profile-back').hidden=true;
       modesBack.hidden=classField.hidden=false;
-      title.textContent='校园登录';
+      title.textContent='登录';
       message.textContent=classes.length?'':'暂时没有可选班级。';
       classSelect.focus();
     } catch(error) {
-      if(attempt===generation) message.textContent=error.message||'读取班级失败，请重试。';
+      if(attempt===generation) message.textContent=error.status===403
+        ?'登录暂未开放，可以先以游客身份游玩。'
+        :'读取班级失败，请重试。';
     }
   });
   classSelect.addEventListener('change',async()=>{

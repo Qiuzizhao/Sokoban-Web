@@ -98,6 +98,7 @@
 .profile-choice strong{font-size:16px}
 .profile-choice small{font-size:13px;color:#53685c}
 .profile-choice svg{display:block;width:16px;height:16px;color:#557262}
+.profile-choice > span:last-child{grid-column:3}
 .profile-students button:hover:not(:disabled){background:#dceee0;border-color:#94bc9f}
 .profile-link{
   min-height:44px;padding:3px 5px;border:0;border-radius:6px;background:transparent;
@@ -327,8 +328,8 @@ html.no-flexgap body:not(.single-level) .game-heading > .optimal-moves{margin-ri
             <strong>游客</strong><small id="guest-save-note">本机存档</small>
             <span aria-hidden="true"><i data-lucide="chevron-right"></i></span>
           </button>
-          <button id="play-campus" class="profile-choice" aria-label="校园" aria-describedby="campus-save-note">
-            <strong>校园</strong><small id="campus-save-note">跨设备续关</small>
+          <button id="play-login" class="profile-choice">
+            <strong>登录</strong>
             <span aria-hidden="true"><i data-lucide="chevron-right"></i></span>
           </button>
         </div>
