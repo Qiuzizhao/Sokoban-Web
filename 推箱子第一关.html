@@ -87,18 +87,17 @@
 .profile-heading h2{font-size:23px;line-height:1.25;margin:0;color:#193c30}
 .profile-panel h3,.profile-panel label{font-size:14px;font-weight:700;margin:0;color:#37574a}
 .profile-field{display:grid;gap:8px;min-width:0}
-.profile-actions{display:grid;min-width:0;border-top:1px solid #dce7dc;border-bottom:1px solid #dce7dc}
-.profile-choice{
-  display:grid;grid-template-columns:minmax(0,1fr) auto 16px;align-items:center;gap:10px;
-  min-height:54px;padding:6px 5px;border:0;background:transparent;color:#254436;text-align:left
+.profile-actions{
+  display:grid;grid-template-columns:repeat(2,108px);justify-content:center;gap:24px
 }
-.profile-choice + .profile-choice{border-top:1px solid #dce7dc}
-.profile-choice:hover:not(:disabled){background:#eef4ec}
-.profile-choice:focus-visible{outline-offset:-3px}
-.profile-choice strong{font-size:16px}
-.profile-choice small{font-size:13px;color:#53685c}
-.profile-choice svg{display:block;width:16px;height:16px;color:#557262}
-.profile-choice > span:last-child{grid-column:3}
+.profile-choice{
+  display:grid;place-items:center;width:108px;height:108px;padding:0;
+  border:1px solid #bbcec0;border-radius:50%;background:#f0f5ef;color:#214536;
+  font-size:19px;font-weight:700
+}
+.profile-choice:hover:not(:disabled){background:#e5f0e5;border-color:#96b49f}
+#play-login{background:#285d46;border-color:#285d46;color:#fff}
+#play-login:hover:not(:disabled){background:#1e4c39;border-color:#1e4c39}
 .profile-students button:hover:not(:disabled){background:#dceee0;border-color:#94bc9f}
 .profile-link{
   min-height:44px;padding:3px 5px;border:0;border-radius:6px;background:transparent;
@@ -129,6 +128,8 @@
   .profile-tiles span{border-radius:2px}
   .profile-panel{gap:10px;padding:17px}
   .profile-heading h2{font-size:21px}
+  .profile-actions{grid-template-columns:repeat(2,88px);gap:18px}
+  .profile-choice{width:88px;height:88px;font-size:17px}
   .profile-students{grid-template-columns:repeat(auto-fit,minmax(73px,1fr));max-height:32vh}
 }
 @media(max-height:470px){
@@ -405,14 +406,8 @@ if (!Element.prototype.replaceChildren) {
           <button id="profile-modes-back" class="profile-link" hidden>返回选择</button>
         </div>
         <div class="profile-actions" id="profile-modes">
-          <button id="play-guest" class="profile-choice" aria-label="游客" aria-describedby="guest-save-note">
-            <strong>游客</strong><small id="guest-save-note">本机存档</small>
-            <span aria-hidden="true"><i data-lucide="chevron-right"></i></span>
-          </button>
-          <button id="play-login" class="profile-choice">
-            <strong>登录</strong>
-            <span aria-hidden="true"><i data-lucide="chevron-right"></i></span>
-          </button>
+          <button id="play-guest" class="profile-choice">游客</button>
+          <button id="play-login" class="profile-choice">登录</button>
         </div>
         <div id="profile-class-field" class="profile-field" hidden>
           <label for="profile-class">班级</label>
