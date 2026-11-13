@@ -48,17 +48,43 @@
     </section>
   </main>
   <dialog id="profile-dialog" aria-labelledby="profile-title">
-    <div class="profile-panel">
-      <h2 id="profile-title">选择游玩身份</h2>
-      <div class="profile-actions" id="profile-modes">
-        <button id="play-guest" class="secondary-button">游客</button>
-        <button id="play-campus" class="primary-button">校园</button>
+    <div class="profile-shell">
+      <div class="profile-hero" aria-hidden="true">
+        <div class="profile-tiles">
+          <span></span><span><img src="assets/box.png" alt=""></span>
+          <span><img src="assets/playerDown.png" alt=""></span><span><img src="assets/goal.png" alt=""></span>
+        </div>
+        <strong>推箱子</strong>
       </div>
-      <label for="profile-class" id="profile-class-label" hidden>选择班级</label>
-      <select id="profile-class" hidden></select>
-      <div id="profile-students" class="profile-students" role="group" aria-label="选择姓名" hidden></div>
-      <p id="profile-message" role="status"></p>
-      <button id="profile-back" class="secondary-button" hidden>返回游戏</button>
+      <div class="profile-panel">
+        <button id="profile-back" class="profile-link" hidden>返回游戏</button>
+        <button id="profile-modes-back" class="profile-link" hidden><i data-lucide="chevron-left"></i>选择身份</button>
+        <h2 id="profile-title">选择游玩身份</h2>
+        <div class="profile-actions" id="profile-modes">
+          <button id="play-guest" class="profile-choice" aria-label="游客">
+            <span class="profile-icon"><i data-lucide="user-round"></i></span>
+            <span><strong>游客</strong><small>进度保存在这台设备</small></span>
+            <i data-lucide="arrow-right"></i>
+          </button>
+          <button id="play-campus" class="profile-choice profile-choice-campus" aria-label="校园">
+            <span class="profile-icon"><i data-lucide="school"></i></span>
+            <span><strong>校园</strong><small>换设备也能续关</small></span>
+            <i data-lucide="arrow-right"></i>
+          </button>
+        </div>
+        <div id="profile-class-field" class="profile-field" hidden>
+          <label for="profile-class">班级</label>
+          <select id="profile-class"></select>
+        </div>
+        <div id="profile-roster" class="profile-field" hidden>
+          <div class="profile-roster-heading">
+            <h3 id="profile-names">点自己的名字进入游戏</h3>
+            <input id="profile-search" type="search" placeholder="搜索姓名" aria-label="搜索姓名" autocomplete="off" hidden>
+          </div>
+          <div id="profile-students" class="profile-students" role="group" aria-labelledby="profile-names"></div>
+        </div>
+        <p id="profile-message" role="status"></p>
+      </div>
     </div>
   </dialog>
   <dialog id="success"><div class="success-content"><div class="success-mark"><i data-lucide="check"></i></div><span class="eyebrow">LEVEL COMPLETE</span><h2>全部归位！</h2><p id="success-stats"></p><div class="success-actions"><button class="secondary-button" id="success-close">返回棋盘</button><button class="primary-button" id="success-next">下一关 <i data-lucide="arrow-right"></i></button></div></div></dialog>

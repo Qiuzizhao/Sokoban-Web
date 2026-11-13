@@ -70,6 +70,8 @@ export function setupProfiles({onGuest,onCampus,onBest,onError}) {
   if(!__CAMPUS__||!/^https?:$/.test(location.protocol)) return;
   const dialog=$('profile-dialog'), button=$('profile-toggle');
   const classSelect=$('profile-class'), students=$('profile-students'), message=$('profile-message');
+  const title=$('profile-title'), modes=$('profile-modes'), modesBack=$('profile-modes-back');
+  const classField=$('profile-class-field'), rosterField=$('profile-roster'), search=$('profile-search');
   let linkKey='', entered=false, generation=0;
   try {
     linkKey=new URLSearchParams(location.hash.slice(1)).get('campus')||'';
@@ -77,11 +79,17 @@ export function setupProfiles({onGuest,onCampus,onBest,onError}) {
     else linkKey=sessionStorage.getItem('sokoban-campus-link')||'';
   } catch {}
 
-  function open() {
+  function showModes() {
     generation++;
+    title.textContent='选择游玩身份';
     message.textContent='';
-    classSelect.hidden=$('profile-class-label').hidden=students.hidden=true;
+    modes.hidden=false;
+    modesBack.hidden=classField.hidden=rosterField.hidden=true;
     $('profile-back').hidden=!entered;
+  }
+
+  function open() {
+    showModes();
     dialog.showModal();
   }
 
@@ -110,18 +118,33 @@ export function setupProfiles({onGuest,onCampus,onBest,onError}) {
   document.body.classList.add('has-profiles');
   button.addEventListener('click',open);
   $('profile-back').addEventListener('click',()=>dialog.close());
+  modesBack.addEventListener('click',()=>{
+    showModes();
+    $('play-campus').focus();
+  });
   $('play-guest').addEventListener('click',()=>enter(null));
   dialog.addEventListener('cancel',event=>{if(!entered) event.preventDefault();});
+  search.addEventListener('input',()=>{
+    const query=search.value.trim().toLowerCase();
+    let matches=0;
+    for(const choice of students.children) {
+      choice.hidden=!choice.textContent.toLowerCase().includes(query);
+      if(!choice.hidden) matches++;
+    }
+    message.textContent=matches?'':'没有找到这个名字。';
+  });
   $('play-campus').addEventListener('click',async()=>{
     const attempt=++generation;
-    students.hidden=classSelect.hidden=$('profile-class-label').hidden=true;
+    classField.hidden=rosterField.hidden=true;
     if(!linkKey) {message.textContent='请使用老师发放的校园链接。';return;}
     message.textContent='正在读取班级…';
     try {
       const {classes}=await request('classes',linkKey);
       if(!dialog.open||attempt!==generation) return;
       classSelect.replaceChildren(new Option('请选择班级',''),...classes.map(item=>new Option(item.name,item.id)));
-      classSelect.hidden=$('profile-class-label').hidden=false;
+      modes.hidden=$('profile-back').hidden=true;
+      modesBack.hidden=classField.hidden=false;
+      title.textContent='校园登录';
       message.textContent=classes.length?'':'暂时没有可选班级。';
       classSelect.focus();
     } catch(error) {
@@ -130,7 +153,7 @@ export function setupProfiles({onGuest,onCampus,onBest,onError}) {
   });
   classSelect.addEventListener('change',async()=>{
     const attempt=++generation;
-    students.hidden=true;
+    rosterField.hidden=true;
     if(classSelect.value==='') {message.textContent='';return;}
     const classId=Number(classSelect.value);
     message.textContent='正在读取姓名…';
@@ -139,7 +162,6 @@ export function setupProfiles({onGuest,onCampus,onBest,onError}) {
       if(!dialog.open||attempt!==generation) return;
       students.replaceChildren(...roster.students.map(student=>{
         const choice=document.createElement('button');
-        choice.className='secondary-button';
         choice.textContent=student.name;
         choice.addEventListener('click',async()=>{
           const loginAttempt=++generation;
@@ -161,8 +183,11 @@ export function setupProfiles({onGuest,onCampus,onBest,onError}) {
         });
         return choice;
       }));
-      students.hidden=false;
-      message.textContent=roster.students.length?'点自己的名字直接进入游戏。':'这个班暂时没有学生名单。';
+      search.value='';
+      search.hidden=roster.students.length<12;
+      students.scrollTop=0;
+      rosterField.hidden=!roster.students.length;
+      message.textContent=roster.students.length?'':'这个班暂时没有学生名单。';
     } catch(error) {
       if(attempt===generation) message.textContent=error.message||'读取姓名失败，请重试。';
     }
