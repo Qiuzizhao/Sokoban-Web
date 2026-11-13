@@ -57,19 +57,19 @@
         <strong>推箱子</strong>
       </div>
       <div class="profile-panel">
-        <button id="profile-back" class="profile-link" hidden>返回游戏</button>
-        <button id="profile-modes-back" class="profile-link" hidden><i data-lucide="chevron-left"></i>选择身份</button>
-        <h2 id="profile-title">选择游玩身份</h2>
+        <div class="profile-heading">
+          <h2 id="profile-title" tabindex="-1">选择身份</h2>
+          <button id="profile-back" class="profile-link" hidden>返回游戏</button>
+          <button id="profile-modes-back" class="profile-link" hidden>返回选择</button>
+        </div>
         <div class="profile-actions" id="profile-modes">
-          <button id="play-guest" class="profile-choice" aria-label="游客">
-            <span class="profile-icon"><i data-lucide="user-round"></i></span>
-            <span><strong>游客</strong><small>进度保存在这台设备</small></span>
-            <i data-lucide="arrow-right"></i>
+          <button id="play-guest" class="profile-choice" aria-label="游客" aria-describedby="guest-save-note">
+            <strong>游客</strong><small id="guest-save-note">本机存档</small>
+            <span aria-hidden="true"><i data-lucide="chevron-right"></i></span>
           </button>
-          <button id="play-campus" class="profile-choice profile-choice-campus" aria-label="校园">
-            <span class="profile-icon"><i data-lucide="school"></i></span>
-            <span><strong>校园</strong><small>换设备也能续关</small></span>
-            <i data-lucide="arrow-right"></i>
+          <button id="play-campus" class="profile-choice" aria-label="校园" aria-describedby="campus-save-note">
+            <strong>校园</strong><small id="campus-save-note">跨设备续关</small>
+            <span aria-hidden="true"><i data-lucide="chevron-right"></i></span>
           </button>
         </div>
         <div id="profile-class-field" class="profile-field" hidden>

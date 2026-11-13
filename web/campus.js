@@ -81,7 +81,7 @@ export function setupProfiles({onGuest,onCampus,onBest,onError}) {
 
   function showModes() {
     generation++;
-    title.textContent='选择游玩身份';
+    title.textContent='选择身份';
     message.textContent='';
     modes.hidden=false;
     modesBack.hidden=classField.hidden=rosterField.hidden=true;
@@ -91,6 +91,7 @@ export function setupProfiles({onGuest,onCampus,onBest,onError}) {
   function open() {
     showModes();
     dialog.showModal();
+    title.focus();
   }
 
   function enter(student) {

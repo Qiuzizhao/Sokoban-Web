@@ -1,4 +1,4 @@
-import { createIcons, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Undo2, Redo2, RotateCcw, Grid2x2, VolumeX, Volume2, Maximize, Minimize, Footprints, Box, CircleCheck, Check, LockKeyhole, School, UserRound, X } from 'lucide';
+import { createIcons, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Undo2, Redo2, RotateCcw, Grid2x2, VolumeX, Volume2, Maximize, Minimize, Footprints, Box, CircleCheck, Check, LockKeyhole, X } from 'lucide';
 import { levels } from './levels.js';
 import { assets } from './assets.js';
 import { GameSession } from './session.js';
@@ -9,7 +9,7 @@ import { unlockSolution } from './solutions.js';
 import { cancelHint, closeHints, requestHint } from './hints.js';
 import { saveCampusWin, setupProfiles } from './campus.js';
 
-const icons = {ArrowUp,ArrowDown,ArrowLeft,ArrowRight,ChevronLeft,ChevronRight,Undo2,Redo2,RotateCcw,Grid2x2,VolumeX,Volume2,Maximize,Minimize,Footprints,Box,CircleCheck,Check,LockKeyhole,School,UserRound,X};
+const icons = {ArrowUp,ArrowDown,ArrowLeft,ArrowRight,ChevronLeft,ChevronRight,Undo2,Redo2,RotateCcw,Grid2x2,VolumeX,Volume2,Maximize,Minimize,Footprints,Box,CircleCheck,Check,LockKeyhole,X};
 const $ = id => document.getElementById(id);
 const singleLevel=levels.length===1;
 const storageKey = singleLevel?'sokoban-first-level-v1':'sokoban-web-v1';
