@@ -66,17 +66,24 @@
           <button id="play-guest" class="profile-choice">游客</button>
           <button id="play-login" class="profile-choice">登录</button>
         </div>
-        <div id="profile-class-field" class="profile-field" hidden>
-          <label for="profile-class">班级</label>
-          <select id="profile-class"></select>
-        </div>
-        <div id="profile-roster" class="profile-field" hidden>
-          <div class="profile-roster-heading">
-            <h3 id="profile-names">点自己的名字进入游戏</h3>
-            <input id="profile-search" type="search" placeholder="搜索姓名" aria-label="搜索姓名" autocomplete="off" hidden>
+        <form id="profile-form" class="profile-form" hidden>
+          <div class="profile-field">
+            <label for="profile-account">账号</label>
+            <input id="profile-account" type="text" inputmode="numeric" autocomplete="username" pattern="[0-9]{5,64}" maxlength="64" placeholder="至少 5 位数字" title="请输入 5–64 位数字" required>
           </div>
-          <div id="profile-students" class="profile-students" role="group" aria-labelledby="profile-names"></div>
-        </div>
+          <div class="profile-field">
+            <label for="profile-password">密码</label>
+            <input id="profile-password" type="password" autocomplete="current-password" minlength="8" maxlength="128" placeholder="至少 8 个字符" required>
+          </div>
+          <div id="profile-confirm-field" class="profile-field" hidden>
+            <label for="profile-confirm">确认密码</label>
+            <input id="profile-confirm" type="password" autocomplete="new-password" minlength="8" maxlength="128">
+          </div>
+          <div class="profile-form-actions">
+            <button id="profile-submit" class="primary-button" type="submit">登录</button>
+            <button id="profile-change-mode" class="profile-link" type="button">注册账号</button>
+          </div>
+        </form>
         <p id="profile-message" role="status"></p>
       </div>
     </div>

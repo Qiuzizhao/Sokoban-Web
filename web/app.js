@@ -7,7 +7,7 @@ import { optimalMoves } from './optimal-moves.js';
 import { playVictory, stopVictory } from './victory.js';
 import { unlockSolution } from './solutions.js';
 import { cancelHint, closeHints, requestHint } from './hints.js';
-import { saveCampusWin, setupProfiles } from './campus.js';
+import { saveAccountWin, setupProfiles } from './accounts.js';
 
 const icons = {ArrowUp,ArrowDown,ArrowLeft,ArrowRight,ChevronLeft,ChevronRight,Undo2,Redo2,RotateCcw,Grid2x2,VolumeX,Volume2,Maximize,Minimize,Footprints,Box,CircleCheck,Check,LockKeyhole,X};
 const $ = id => document.getElementById(id);
@@ -16,7 +16,7 @@ const storageKey = singleLevel?'sokoban-first-level-v1':'sokoban-web-v1';
 const mobileLayout=window.matchMedia('(max-width:680px)');
 let records = {}, muted = true, savedGame, storageAvailable = true;
 let currentVersion=0, pendingCurrentVersion=0, soundDirty=false;
-let campusMode=false;
+let accountMode=false;
 function parseSave(raw) {
   try {return JSON.parse(raw)||{};} catch {return {};}
 }
@@ -85,7 +85,7 @@ function mergeRecords(saved) {
 }
 function persist() {
   clearTimeout(saveTimer);
-  if(campusMode) return;
+  if(accountMode) return;
   if(!pendingCurrentVersion&&!soundDirty) return;
   try {
     const saved=parseSave(localStorage.getItem(storageKey));
@@ -105,7 +105,7 @@ function persist() {
   catch { storageAvailable = false; }
 }
 function scheduleSave() {
-  if(campusMode) return;
+  if(accountMode) return;
   pendingCurrentVersion=Math.max(Date.now(),currentVersion+1,pendingCurrentVersion+1);
   clearTimeout(saveTimer);
   saveTimer=setTimeout(persist,180);
@@ -300,7 +300,7 @@ function load(id,restore,saveSelection=true) {
 }
 function recordWin(celebrate=false) {
   keepBest(session.id,{moves:session.moves,pushes:session.pushes});
-  if(campusMode) saveCampusWin(session.id,session.moves);
+  if(accountMode) saveAccountWin(session.id,session.moves);
   persist();renderCatalog();sound('win');
   if(singleLevel) {
     if(celebrate) notify('全部归位！');
@@ -527,7 +527,7 @@ document.addEventListener('visibilitychange',()=>{
   refreshHint();
 });
 window.addEventListener('storage',event=>{
-  if(campusMode||event.key!==storageKey||event.storageArea!==localStorage) return;
+  if(accountMode||event.key!==storageKey||event.storageArea!==localStorage) return;
   const saved=parseSave(event.newValue);
   currentVersion=Math.max(currentVersion,saveVersion(saved));
   mergeRecords(saved.records);
@@ -543,14 +543,14 @@ load(Number.isInteger(savedGame?.id)?savedGame.id:1,savedGame,false);
 if(!storageAvailable)notify('当前浏览器无法保存进度');
 refreshIcons();
 
-function switchProfile(studentRecords) {
+function switchProfile(accountRecords) {
   persist();
   pendingCurrentVersion=0;
   soundDirty=false;
   setHintsEnabled(false);
-  campusMode=Boolean(studentRecords);
-  if(campusMode) {
-    records=studentRecords;
+  accountMode=Boolean(accountRecords);
+  if(accountMode) {
+    records=accountRecords;
     savedGame=undefined;
   } else {
     readGuestSave();
@@ -558,12 +558,12 @@ function switchProfile(studentRecords) {
   notify('');
   replaceIcon($('sound'),muted?'volume-x':'volume-2',muted?'开启音效':'关闭音效');
   $('sound').setAttribute('aria-pressed',String(!muted));
-  const id=savedGame?.id||(campusMode?latestLevel(records,levels):1)||levels[0].id;
+  const id=savedGame?.id||(accountMode?latestLevel(records,levels):1)||levels[0].id;
   load(id,savedGame,false);
 }
 setupProfiles({
   onGuest:()=>switchProfile(null),
-  onCampus:switchProfile,
+  onLogin:switchProfile,
   onBest:(level,moves)=>{
     if(keepBest(level,{moves})) renderCatalog();
   },

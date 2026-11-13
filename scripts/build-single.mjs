@@ -22,7 +22,7 @@ const embedded=Object.fromEntries(Object.entries(assets).filter(([name])=>!first
 }));
 const result=await build({
   entryPoints:['web/app.js'],bundle:true,write:false,format:'iife',minify:true,target:(classroom||firstLevel)?['chrome79']:['es2020'],legalComments:'eof',
-  define:{__HINT_WORKER_SOURCE__:await hintWorkerSource(),__CAMPUS__:String(classroom)},
+  define:{__HINT_WORKER_SOURCE__:await hintWorkerSource(),__ACCOUNTS__:String(classroom)},
   plugins:[{name:'embedded-assets',setup(builder){
     builder.onLoad({filter:/[\\/]web[\\/]assets\.js$/},()=>({contents:`export const assets = ${JSON.stringify(embedded)};`,loader:'js'}));
     if(firstLevel)builder.onLoad({filter:/[\\/]web[\\/]levels\.js$/},()=>({contents:`export const levels = ${JSON.stringify(levels.slice(0,1))};`,loader:'js'}));
